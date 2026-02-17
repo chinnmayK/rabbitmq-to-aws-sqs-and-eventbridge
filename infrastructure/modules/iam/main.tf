@@ -221,3 +221,28 @@ resource "aws_iam_role_policy_attachment" "codedeploy_policy" {
   role       = aws_iam_role.codedeploy_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
 }
+
+########################################################
+# CODEPIPELINE → CODEDEPLOY PERMISSION
+########################################################
+
+resource "aws_iam_role_policy" "codepipeline_codedeploy_policy" {
+  name = "${var.project_name}-codepipeline-codedeploy"
+  role = aws_iam_role.codepipeline_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "codedeploy:CreateDeployment",
+          "codedeploy:GetDeployment",
+          "codedeploy:GetDeploymentConfig",
+          "codedeploy:RegisterApplicationRevision"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
