@@ -54,3 +54,57 @@ resource "aws_codestarconnections_connection" "github" {
   name          = "${var.project_name}-gc"
   provider_type = "GitHub"
 }
+
+resource "aws_codepipeline" "microservices_pipeline" {
+  name     = "${var.project_name}-pipeline"
+  role_arn = var.codepipeline_role_arn
+
+  artifact_store {
+    location = aws_s3_bucket.artifact_bucket.bucket
+    type     = "S3"
+  }
+
+  ################################
+  # SOURCE STAGE (GitHub)
+  ################################
+  stage {
+    name = "Source"
+
+    action {
+      name             = "GitHub_Source"
+      category         = "Source"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
+      version          = "1"
+      output_artifacts = ["source_output"]
+
+      configuration = {
+        ConnectionArn    = aws_codestarconnections_connection.github.arn
+        FullRepositoryId = "chinnmayK/nodejs-microservices"
+        BranchName       = "main"
+        DetectChanges    = "true"
+      }
+    }
+  }
+
+  ################################
+  # BUILD STAGE
+  ################################
+  stage {
+    name = "Build"
+
+    action {
+      name             = "Docker_Build"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"]
+      output_artifacts = ["build_output"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.microservices_build.name
+      }
+    }
+  }
+}
