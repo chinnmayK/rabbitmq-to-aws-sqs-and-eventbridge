@@ -11,17 +11,22 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 
 echo "Stopping old containers..."
 cd $APP_DIR
-docker compose down || true
+# Using a more direct check for the command
+if docker compose version >/dev/null 2>&1; then
+    docker compose down || true
+else
+    docker-compose down || true
+fi
 
 echo "Pulling latest images..."
-for service in customer products shopping gateway; do
-    docker pull $ECR_URL/node-microservices-$service:latest
-done
+docker pull $ECR_URL/node-microservices-customer:latest
+docker pull $ECR_URL/node-microservices-products:latest
+docker pull $ECR_URL/node-microservices-shopping:latest
+docker pull $ECR_URL/node-microservices-gateway:latest
 
 echo "Starting containers..."
-# Using a variable to handle the flag to ensure no trailing characters interfere
-DETACHED_FLAG="-d"
-docker compose up $DETACHED_FLAG
+# Running the command without a trailing variable or space
+docker compose up -d
 
 echo "Cleaning up..."
 docker image prune -f
