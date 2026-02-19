@@ -246,3 +246,38 @@ resource "aws_iam_role_policy" "codepipeline_codedeploy_policy" {
     ]
   })
 }
+
+########################################################
+# EC2 S3 ARTIFACT ACCESS (REQUIRED FOR CODEDEPLOY)
+########################################################
+
+resource "aws_iam_policy" "ec2_s3_artifacts" {
+  name        = "${var.project_name}-ec2-s3-artifacts"
+  description = "Allow EC2 to download CodePipeline artifacts from S3"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = "arn:aws:s3:::${var.project_name}-artifacts/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation"
+        ]
+        Resource = "arn:aws:s3:::${var.project_name}-artifacts"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_s3_artifacts_attach" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ec2_s3_artifacts.arn
+}
