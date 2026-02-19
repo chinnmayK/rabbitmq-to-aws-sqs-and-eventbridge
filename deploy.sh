@@ -26,7 +26,7 @@ docker pull $ECR_URL/node-microservices-gateway:latest
 
 echo "Starting containers..."
 # Running the command without a trailing variable or space
-docker compose up -d
+docker compose up
 
 echo "Cleaning up..."
 docker image prune -f
