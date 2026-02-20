@@ -1,25 +1,26 @@
-const express = require("express");
-const { PORT } = require("./config");
-const { databaseConnection } = require("./database");
-const expressApp = require("./express-app");
-const { CreateChannel } = require("./utils");
+const express = require('express');
+const { PORT } = require('./config');
+const { databaseConnection } = require('./database');
+const expressApp = require('./express-app');
 
 const StartServer = async () => {
-  const app = express();
+    try {
+        const app = express();
 
-  await databaseConnection();
+        await databaseConnection();
+        await expressApp(app);
 
-  const channel = await CreateChannel();
+        app.listen(PORT, () => {
+            console.log(`Products service listening on port ${PORT}`);
+        }).on('error', (err) => {
+            console.error('Server failed to start:', err);
+            process.exit(1);
+        });
 
-  await expressApp(app, channel);
-
-  app.listen(PORT, () => {
-    console.log(`Products is Listening to Port ${PORT}`);
-  })
-  .on("error", (err) => {
-    console.log(err);
-    process.exit();
-  });
+    } catch (err) {
+        console.error('Startup error:', err);
+        process.exit(1);
+    }
 };
 
 StartServer();

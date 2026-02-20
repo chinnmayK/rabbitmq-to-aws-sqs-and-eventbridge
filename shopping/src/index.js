@@ -4,21 +4,23 @@ const { databaseConnection } = require('./database');
 const expressApp = require('./express-app');
 
 const StartServer = async () => {
+    try {
+        const app = express();
 
-    const app = express();
+        await databaseConnection();
+        await expressApp(app);
 
-    await databaseConnection();
+        app.listen(PORT, () => {
+            console.log(`Shopping service listening on port ${PORT}`);
+        }).on('error', (err) => {
+            console.error('Server failed to start:', err);
+            process.exit(1);
+        });
 
-    await expressApp(app);
-
-    app.listen(PORT, () => {
-        console.log(`Shopping is Listening to Port ${PORT}`);
-    })
-    .on('error', (err) => {
-        console.log(err);
-        process.exit();
-    });
-
+    } catch (err) {
+        console.error('Startup error:', err);
+        process.exit(1);
+    }
 };
 
 StartServer();
