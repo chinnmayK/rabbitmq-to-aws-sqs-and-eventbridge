@@ -20,7 +20,20 @@ done
 ########################################
 # Detect Region
 ########################################
-REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+REGION=$(curl -s \
+  -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/dynamic/instance-identity/document \
+  | grep region \
+  | awk -F\" '{print $4}')
+
+if [ -z "$REGION" ]; then
+  echo "Failed to detect region"
+  exit 1
+fi
+
 echo "Detected region: $REGION"
 
 ########################################

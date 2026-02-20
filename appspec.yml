@@ -2,18 +2,9 @@ version: 0.0
 os: linux
 
 files:
-  - source: .
+  - source: /
     destination: /opt/node-app
     overwrite: yes
-
-permissions:
-  - object: /opt/node-app/deploy.sh
-    pattern: deploy.sh
-    owner: root
-    group: root
-    mode: 755
-    type:
-      - file
 
 hooks:
   AfterInstall:
