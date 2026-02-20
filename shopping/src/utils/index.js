@@ -9,40 +9,52 @@ const {
   MSG_QUEUE_URL,
 } = require("../config");
 
-// ------------------
-// Utility
-// ------------------
+// ======================================================
+// 🔐 AUTH & COMMON UTILITIES
+// ======================================================
 
-module.exports.GenerateSalt = async () => bcrypt.genSalt();
+module.exports.GenerateSalt = async () => {
+  return await bcrypt.genSalt();
+};
 
-module.exports.GeneratePassword = async (password, salt) =>
-  bcrypt.hash(password, salt);
+module.exports.GeneratePassword = async (password, salt) => {
+  return await bcrypt.hash(password, salt);
+};
 
-module.exports.ValidatePassword = async (enteredPassword, savedPassword, salt) =>
-  (await bcrypt.hash(enteredPassword, salt)) === savedPassword;
+// ✅ FIXED (use bcrypt.compare instead of manual hash compare)
+module.exports.ValidatePassword = async (enteredPassword, savedPassword) => {
+  return await bcrypt.compare(enteredPassword, savedPassword);
+};
 
-module.exports.GenerateSignature = async (payload) =>
-  jwt.sign(payload, APP_SECRET, { expiresIn: "30d" });
+module.exports.GenerateSignature = async (payload) => {
+  return jwt.sign(payload, APP_SECRET, { expiresIn: "30d" });
+};
 
 module.exports.ValidateSignature = async (req) => {
   try {
     const signature = req.get("Authorization");
+
+    if (!signature) return false;
+
     const payload = jwt.verify(signature.split(" ")[1], APP_SECRET);
     req.user = payload;
     return true;
-  } catch {
+  } catch (err) {
     return false;
   }
 };
 
 module.exports.FormateData = (data) => {
-  if (data) return { data };
-  throw new Error("Data Not found!");
+  if (data) {
+    return { data };
+  } else {
+    throw new Error("Data Not found!");
+  }
 };
 
-// ------------------
-// Message Broker
-// ------------------
+// ======================================================
+// 🐇 RABBITMQ MESSAGE BROKER
+// ======================================================
 
 module.exports.CreateChannel = async () => {
   let retries = 5;
@@ -68,6 +80,42 @@ module.exports.CreateChannel = async () => {
   throw new Error("RabbitMQ connection failed");
 };
 
-module.exports.PublishMessage = (channel, service, msg) => {
-  channel.publish(EXCHANGE_NAME, service, Buffer.from(msg));
+// ================= PUBLISH =================
+
+module.exports.PublishMessage = async (channel, service, msg) => {
+  await channel.publish(
+    EXCHANGE_NAME,
+    service,
+    Buffer.from(JSON.stringify(msg))
+  );
+
+  console.log("📤 Message Sent to:", service);
+};
+
+// ================= SUBSCRIBE =================
+
+module.exports.SubscribeMessage = async (channel, service) => {
+  const appQueue = await channel.assertQueue(SHOPPING_SERVICE, {
+    durable: true,
+  });
+
+  await channel.bindQueue(
+    appQueue.queue,
+    EXCHANGE_NAME,
+    SHOPPING_SERVICE
+  );
+
+  channel.consume(appQueue.queue, async (data) => {
+    if (data !== null) {
+      console.log("📥 Received Event");
+
+      const payload = data.content.toString();
+
+      await service.SubscribeEvents(payload);
+
+      channel.ack(data);
+    }
+  });
+
+  console.log("👂 Subscribed to Shopping Events");
 };

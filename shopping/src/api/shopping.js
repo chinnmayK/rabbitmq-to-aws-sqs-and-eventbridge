@@ -1,73 +1,107 @@
 const ShoppingService = require("../services/shopping-service");
-const { PublishCustomerEvent, SubscribeMessage } = require("../utils");
-const  UserAuth = require('./middlewares/auth');
-const { CUSTOMER_SERVICE } = require('../config');
-const { PublishMessage } = require('../utils')
+const { PublishMessage, SubscribeMessage } = require("../utils");
+const UserAuth = require("./middlewares/auth");
+const { CUSTOMER_SERVICE } = require("../config");
 
-module.exports = (app, channel) => {
-    
-    const service = new ShoppingService();
+module.exports = async (app, channel) => {
+  const service = new ShoppingService();
 
-    SubscribeMessage(channel, service)
+  console.log("SubscribeMessage:", SubscribeMessage);
 
-    app.post('/order',UserAuth, async (req,res,next) => {
+  // ✅ Corrected
+  await SubscribeMessage(channel, service);
 
-        const { _id } = req.user;
-        const { txnNumber } = req.body;
+  // ================= PLACE ORDER =================
+  app.post("/order", UserAuth, async (req, res, next) => {
+    try {
+      const { _id } = req.user;
+      const { txnNumber } = req.body;
 
-        const { data } = await service.PlaceOrder({_id, txnNumber});
-        
-        const payload = await service.GetOrderPayload(_id, data, 'CREATE_ORDER')
+      const { data } = await service.PlaceOrder({ _id, txnNumber });
 
-        // PublishCustomerEvent(payload)
-        PublishMessage(channel,CUSTOMER_SERVICE, JSON.stringify(payload))
+      const payload = await service.GetOrderPayload(
+        _id,
+        data,
+        "CREATE_ORDER"
+      );
 
-        res.status(200).json(data);
+      // ✅ Corrected
+      await PublishMessage(channel, CUSTOMER_SERVICE, payload);
 
-    });
+      return res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
 
-    app.get('/orders',UserAuth, async (req,res,next) => {
+  // ================= GET ORDERS =================
+  app.get("/orders", UserAuth, async (req, res, next) => {
+    try {
+      const { _id } = req.user;
 
-        const { _id } = req.user;
+      const { data } = await service.GetOrders(_id);
 
-        const { data } = await service.GetOrders(_id);
-        
-        res.status(200).json(data);
+      return res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
 
-    });
+  // ================= ADD TO CART =================
+  app.put("/cart", UserAuth, async (req, res, next) => {
+    try {
+      const { _id } = req.user;
+      const { product, qty } = req.body;
 
-    app.put('/cart',UserAuth, async (req,res,next) => {
+      const { data } = await service.ManageCart(
+        _id,
+        product,
+        qty,
+        false
+      );
 
-        const { _id } = req.user;
+      return res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
 
-        const { data } = await service.AddToCart(_id, req.body._id);
-        
-        res.status(200).json(data);
+  // ================= REMOVE FROM CART =================
+  app.delete("/cart", UserAuth, async (req, res, next) => {
+    try {
+      const { _id } = req.user;
+      const { product, qty } = req.body;
 
-    });
+      const { data } = await service.ManageCart(
+        _id,
+        product,
+        qty,
+        true
+      );
 
-    app.delete('/cart/:id',UserAuth, async (req,res,next) => {
+      return res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
 
-        const { _id } = req.user;
+  // ================= GET CART =================
+  app.get("/cart", UserAuth, async (req, res, next) => {
+    try {
+      const { _id } = req.user;
 
+      const { data } = await service.GetCart({ _id });
 
-        const { data } = await service.AddToCart(_id, req.body._id);
-        
-        res.status(200).json(data);
+      return res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
 
-    });
-    
-    app.get('/cart', UserAuth, async (req,res,next) => {
-
-        const { _id } = req.user;
-        
-        const { data } = await service.GetCart({ _id });
-
-        return res.status(200).json(data);
-    });
-
-    app.get('/whoami', (req,res,next) => {
-        return res.status(200).json({msg: '/shoping : I am Shopping Service'})
-    })
- 
-}
+  // ================= HEALTH CHECK =================
+  app.get("/whoami", (req, res) => {
+    return res
+      .status(200)
+      .json({ msg: "/shopping : I am Shopping Service" });
+  });
+};
