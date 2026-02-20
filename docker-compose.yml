@@ -5,7 +5,7 @@ services:
   mongodb:
     image: public.ecr.aws/docker/library/mongo:7
     container_name: mongodb
-    restart: always
+    restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
@@ -15,16 +15,11 @@ services:
       - mongo_data:/data/db
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   rabbitmq:
     image: public.ecr.aws/docker/library/rabbitmq:3-management
     container_name: rabbitmq
-    restart: always
+    restart: unless-stopped
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -33,58 +28,25 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:7
     container_name: redis
-    restart: always
+    restart: unless-stopped
     ports:
       - "6379:6379"
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  gateway:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-gateway:latest
-    container_name: gateway
-    restart: always
-    ports:
-      - "8000:8000"
-    depends_on:
-      customer:
-        condition: service_started
-      products:
-        condition: service_started
-      shopping:
-        condition: service_started
-    environment:
-      PORT: 8000
-      CUSTOMER_SERVICE_URL: http://customer:8001
-      PRODUCT_SERVICE_URL: http://products:8002
-      SHOPPING_SERVICE_URL: http://shopping:8003
     networks:
       - app-network
 
   customer:
     image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-customer:latest
     container_name: customer
-    restart: always
+    restart: unless-stopped
     ports:
       - "8001:8001"
     depends_on:
-      mongodb:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
+      - mongodb
+      - rabbitmq
     environment:
       PORT: 8001
       APP_SECRET: ${APP_SECRET}
@@ -98,16 +60,13 @@ services:
   products:
     image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-products:latest
     container_name: products
-    restart: always
+    restart: unless-stopped
     ports:
       - "8002:8002"
     depends_on:
-      mongodb:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-      redis:
-        condition: service_started
+      - mongodb
+      - rabbitmq
+      - redis
     environment:
       PORT: 8002
       APP_SECRET: ${APP_SECRET}
@@ -122,14 +81,12 @@ services:
   shopping:
     image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-shopping:latest
     container_name: shopping
-    restart: always
+    restart: unless-stopped
     ports:
       - "8003:8003"
     depends_on:
-      mongodb:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
+      - mongodb
+      - rabbitmq
     environment:
       PORT: 8003
       APP_SECRET: ${APP_SECRET}
@@ -137,6 +94,24 @@ services:
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/shopping?authSource=admin
       MSG_QUEUE_URL: amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+    networks:
+      - app-network
+
+  gateway:
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-gateway:latest
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - customer
+      - products
+      - shopping
+    environment:
+      PORT: 8000
+      CUSTOMER_SERVICE_URL: http://customer:8001
+      PRODUCT_SERVICE_URL: http://products:8002
+      SHOPPING_SERVICE_URL: http://shopping:8003
     networks:
       - app-network
 
