@@ -1,4 +1,4 @@
-const { ShoppingRepository } = require("../database");
+const ShoppingRepository = require("../database/repository/shopping-repository");
 const { FormateData } = require("../utils");
 
 class ShoppingService {
