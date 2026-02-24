@@ -8,7 +8,7 @@ const {
 const UserAuth = require("./middlewares/auth");
 
 module.exports = (app, channel) => {
-  const service = new ProductService();
+  const service = new ProductService(channel);
 
   app.post("/product/create", async (req, res, next) => {
     const { name, desc, type, unit, price, available, suplier, banner } =
@@ -25,6 +25,25 @@ module.exports = (app, channel) => {
       banner,
     });
     return res.json(data);
+  });
+
+  app.put("/product/:id", async (req, res, next) => {
+    try {
+      const { data } = await service.UpdateProduct(req.params.id, req.body);
+      return res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.put("/product/inventory/:id", async (req, res, next) => {
+    try {
+      const { qty } = req.body;
+      const { data } = await service.ManageInventory(req.params.id, qty);
+      return res.json(data);
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.get("/category/:type", async (req, res, next) => {
@@ -58,72 +77,79 @@ module.exports = (app, channel) => {
   app.put("/wishlist", UserAuth, async (req, res, next) => {
     const { _id } = req.user;
 
-    const { data } = await service.GetProductPayload(
-      _id,
-      { productId: req.body._id },
-      "ADD_TO_WISHLIST"
-    );
-
-    // PublishCustomerEvent(data);
-    PublishMessage(channel, CUSTOMER_SERVICE, JSON.stringify(data));
-
-    res.status(200).json(data.data.product);
+    try {
+      const product = await service.PublishProductEvent(
+        _id,
+        req.body._id,
+        0,
+        "ADD_TO_WISHLIST"
+      );
+      res.status(200).json(product.data.product);
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.delete("/wishlist/:id", UserAuth, async (req, res, next) => {
     const { _id } = req.user;
     const productId = req.params.id;
 
-    const { data } = await service.GetProductPayload(
-      _id,
-      { productId },
-      "REMOVE_FROM_WISHLIST"
-    );
-    // PublishCustomerEvent(data);
-    PublishMessage(channel, CUSTOMER_SERVICE, JSON.stringify(data));
-
-    res.status(200).json(data.data.product);
+    try {
+      const product = await service.PublishProductEvent(
+        _id,
+        productId,
+        0,
+        "REMOVE_FROM_WISHLIST"
+      );
+      res.status(200).json(product.data.product);
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.put("/cart", UserAuth, async (req, res, next) => {
     const { _id } = req.user;
 
-    const { data } = await service.GetProductPayload(
-      _id,
-      { productId: req.body._id, qty: req.body.qty },
-      "ADD_TO_CART"
-    );
+    try {
+      const product = await service.PublishProductEvent(
+        _id,
+        req.body._id,
+        req.body.qty,
+        "ADD_TO_CART"
+      );
 
-    // PublishCustomerEvent(data);
-    // PublishShoppingEvent(data);
+      const response = {
+        product: product.data.product,
+        unit: product.data.qty,
+      };
 
-    PublishMessage(channel, CUSTOMER_SERVICE, JSON.stringify(data));
-    PublishMessage(channel, SHOPPING_SERVICE, JSON.stringify(data));
-
-    const response = { product: data.data.product, unit: data.data.qty };
-
-    res.status(200).json(response);
+      res.status(200).json(response);
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.delete("/cart/:id", UserAuth, async (req, res, next) => {
     const { _id } = req.user;
     const productId = req.params.id;
 
-    const { data } = await service.GetProductPayload(
-      _id,
-      { productId },
-      "REMOVE_FROM_CART"
-    );
+    try {
+      const product = await service.PublishProductEvent(
+        _id,
+        productId,
+        0,
+        "REMOVE_FROM_CART"
+      );
 
-    // PublishCustomerEvent(data);
-    // PublishShoppingEvent(data);
+      const response = {
+        product: product.data.product,
+        unit: product.data.qty,
+      };
 
-    PublishMessage(channel, CUSTOMER_SERVICE, JSON.stringify(data));
-    PublishMessage(channel, SHOPPING_SERVICE, JSON.stringify(data));
-
-    const response = { product: data.data.product, unit: data.data.qty };
-
-    res.status(200).json(response);
+      res.status(200).json(response);
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.get("/whoami", (req, res, next) => {

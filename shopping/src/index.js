@@ -11,10 +11,10 @@ const StartServer = async () => {
         const app = express();
 
         await databaseConnection();
-        await expressApp(app);
-
         // 🟢 Create RabbitMQ channel
         const channel = await CreateChannel();
+
+        await expressApp(app, channel);
 
         // 🟢 Initialize service with channel
         const service = new ShoppingService(channel);

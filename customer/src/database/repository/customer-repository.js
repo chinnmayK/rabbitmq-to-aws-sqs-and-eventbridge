@@ -42,12 +42,12 @@ class CustomerRepository {
   }
 
   async Wishlist(customerId) {
-    const profile = await CustomerModel.findById(customerId).populate("wishlist");
+    const profile = await CustomerModel.findById(customerId);
     return profile?.wishlist || [];
   }
 
   async AddWishlistItem(customerId, product) {
-    const profile = await CustomerModel.findById(customerId).populate("wishlist");
+    const profile = await CustomerModel.findById(customerId);
     if (!profile) throw new Error("Customer not found");
 
     const exists = profile.wishlist.find(
@@ -67,7 +67,7 @@ class CustomerRepository {
   }
 
   async AddCartItem(customerId, product, qty, isRemove) {
-    const profile = await CustomerModel.findById(customerId).populate("cart");
+    const profile = await CustomerModel.findById(customerId);
     if (!profile) throw new Error("Customer not found");
 
     let cartItems = profile.cart || [];

@@ -8,6 +8,8 @@ const {
   EXCHANGE_NAME,
   CUSTOMER_SERVICE,
   MSG_QUEUE_URL,
+  EVENT_BUS_NAME,
+  AWS_REGION,
 } = require("../config");
 
 // ------------------
@@ -19,7 +21,7 @@ if (!process.env.EVENT_BUS_NAME) {
 }
 
 const eventBridge = new EventBridgeClient({
-  region: process.env.AWS_REGION || "ap-south-1",
+  region: AWS_REGION,
 });
 
 // ------------------
@@ -87,11 +89,13 @@ module.exports.CreateChannel = async () => {
 };
 
 module.exports.PublishMessage = async (channel, service, msg) => {
+  const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
+
   // 1️⃣ Publish to RabbitMQ
-  channel.publish(EXCHANGE_NAME, service, Buffer.from(msg));
+  channel.publish(EXCHANGE_NAME, service, Buffer.from(payload));
 
   // 2️⃣ Publish to EventBridge
-  if (!process.env.EVENT_BUS_NAME) {
+  if (!EVENT_BUS_NAME) {
     console.error("❌ Cannot publish to EventBridge: EVENT_BUS_NAME not set");
     return;
   }
@@ -103,8 +107,8 @@ module.exports.PublishMessage = async (channel, service, msg) => {
           {
             Source: "customer.service",
             DetailType: service,
-            Detail: msg,
-            EventBusName: process.env.EVENT_BUS_NAME,
+            Detail: payload,
+            EventBusName: EVENT_BUS_NAME,
           },
         ],
       })
@@ -119,7 +123,11 @@ module.exports.PublishMessage = async (channel, service, msg) => {
 module.exports.SubscribeMessage = async (channel, service) => {
   const q = await channel.assertQueue("", { exclusive: true });
 
-  await channel.bindQueue(q.queue, EXCHANGE_NAME, CUSTOMER_SERVICE);
+  const events = ["OrderCreated", "ADD_TO_WISHLIST", "REMOVE_FROM_WISHLIST", "ADD_TO_CART", "REMOVE_FROM_CART"];
+
+  events.forEach(async (event) => {
+    await channel.bindQueue(q.queue, EXCHANGE_NAME, event);
+  });
 
   channel.consume(
     q.queue,

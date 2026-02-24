@@ -2,12 +2,15 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const amqplib = require("amqplib");
 const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require("@aws-sdk/client-sqs");
+const { EventBridgeClient, PutEventsCommand } = require("@aws-sdk/client-eventbridge");
 
 const {
   APP_SECRET,
   EXCHANGE_NAME,
   SHOPPING_SERVICE,
   MSG_QUEUE_URL,
+  EVENT_BUS_NAME,
+  AWS_REGION,
 } = require("../config");
 
 // ======================================================
@@ -78,14 +81,42 @@ module.exports.CreateChannel = async () => {
 
 // ================= PUBLISH =================
 
+// 2️⃣ EventBridge Publication
+const eventBridge = new EventBridgeClient({
+  region: AWS_REGION,
+});
+
 module.exports.PublishMessage = async (channel, service, msg) => {
-  await channel.publish(
+  // 1️⃣ Publish to RabbitMQ
+  channel.publish(
     EXCHANGE_NAME,
     service,
     Buffer.from(JSON.stringify(msg))
   );
 
-  console.log("📤 Message Sent to:", service);
+  // 2️⃣ Publish to EventBridge
+  if (!EVENT_BUS_NAME) {
+    console.warn("⚠️ EVENT_BUS_NAME is not set. Skipping EventBridge publish.");
+    return;
+  }
+
+  try {
+    const command = new PutEventsCommand({
+      Entries: [
+        {
+          Source: "shopping.service",
+          DetailType: service,
+          Detail: JSON.stringify(msg),
+          EventBusName: EVENT_BUS_NAME,
+        },
+      ],
+    });
+
+    await eventBridge.send(command);
+    console.log("✅ Event published to EventBridge");
+  } catch (err) {
+    console.error("❌ EventBridge publish failed:", err);
+  }
 };
 
 // ================= RABBITMQ SUBSCRIBE =================
@@ -95,11 +126,11 @@ module.exports.SubscribeMessage = async (channel, service) => {
     durable: true,
   });
 
-  await channel.bindQueue(
-    appQueue.queue,
-    EXCHANGE_NAME,
-    SHOPPING_SERVICE
-  );
+  const events = ["CustomerCreated", "ADD_TO_CART", "REMOVE_FROM_CART"];
+
+  events.forEach(async (event) => {
+    await channel.bindQueue(appQueue.queue, EXCHANGE_NAME, event);
+  });
 
   channel.consume(appQueue.queue, async (data) => {
     if (data !== null) {
@@ -121,7 +152,7 @@ module.exports.SubscribeMessage = async (channel, service) => {
 
 module.exports.StartSQSConsumer = async (service) => {
   const sqs = new SQSClient({
-    region: process.env.AWS_REGION,
+    region: AWS_REGION,
   });
 
   const queueUrl = process.env.SQS_QUEUE_URL;

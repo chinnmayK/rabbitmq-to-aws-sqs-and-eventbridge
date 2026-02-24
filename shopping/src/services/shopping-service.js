@@ -1,9 +1,11 @@
 const ShoppingRepository = require("../database/repository/shopping-repository");
-const { FormateData } = require("../utils");
+const { FormateData, PublishMessage } = require("../utils");
+const { CUSTOMER_SERVICE } = require("../config");
 
 class ShoppingService {
-  constructor() {
+  constructor(channel) {
     this.repository = new ShoppingRepository();
+    this.channel = channel;
   }
 
   // ================= CART =================
@@ -24,9 +26,18 @@ class ShoppingService {
   }
 
   // ================= ORDER =================
-  async PlaceOrder({ _id, txnNumber }) {
+  async PlaceOrder(payload) {
+    const { _id, txnNumber } = payload;
+
     const order = await this.repository.CreateNewOrder(_id, txnNumber);
-    return FormateData(order);
+
+    if (order) {
+      const payload = await this.GetOrderPayload(_id, order, "OrderCreated");
+      await PublishMessage(this.channel, "OrderCreated", payload);
+      return FormateData(order);
+    }
+
+    throw new Error("Order creation failed");
   }
 
   async GetOrders(customerId) {
@@ -58,22 +69,33 @@ class ShoppingService {
         await this.ManageCart(userId, product, qty, true);
         break;
 
+      case "CustomerCreated":
+        await this.SubscribeCustomerCreated(data);
+        break;
+
       default:
         break;
     }
   }
 
+  async SubscribeCustomerCreated(data) {
+    const { userId } = data;
+    await this.repository.CreateCart(userId);
+    console.log("🛒 Cart initialized for new user:", userId);
+  }
+
   // ================= CREATE ORDER EVENT PAYLOAD =================
   async GetOrderPayload(userId, order, event) {
-    if (!order) throw new Error("No order available");
+    if (order) {
+      const payload = {
+        event,
+        data: { userId, order },
+      };
 
-    return {
-      event,
-      data: {
-        userId,
-        order,
-      },
-    };
+      return payload;
+    } else {
+      return FormateData({ error: "No Order Available" });
+    }
   }
 }
 

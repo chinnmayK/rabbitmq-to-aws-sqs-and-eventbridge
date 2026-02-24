@@ -4,7 +4,7 @@ const UserAuth = require("./middlewares/auth");
 const { CUSTOMER_SERVICE } = require("../config");
 
 module.exports = async (app, channel) => {
-  const service = new ShoppingService();
+  const service = new ShoppingService(channel);
 
   console.log("SubscribeMessage:", SubscribeMessage);
 
@@ -18,15 +18,6 @@ module.exports = async (app, channel) => {
       const { txnNumber } = req.body;
 
       const { data } = await service.PlaceOrder({ _id, txnNumber });
-
-      const payload = await service.GetOrderPayload(
-        _id,
-        data,
-        "CREATE_ORDER"
-      );
-
-      // ✅ Corrected
-      await PublishMessage(channel, CUSTOMER_SERVICE, payload);
 
       return res.status(200).json(data);
     } catch (err) {

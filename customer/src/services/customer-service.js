@@ -50,7 +50,7 @@ class CustomerService {
     await PublishMessage(
       this.channel,
       "CustomerCreated",
-      JSON.stringify(payload)
+      payload // msg is stringified in PublishMessage now
     );
 
     console.log("📢 CustomerCreated event published");
@@ -91,7 +91,16 @@ class CustomerService {
   }
 
   // ================= PROFILE =================
-  async GetProfile(id) {
+  async GetProfile(profileId) {
+    const { _id } = profileId;
+    const customer = await this.repository.FindCustomerById({ id: _id });
+
+    if (!customer) throw new Error("Customer not found");
+
+    return FormateData(customer);
+  }
+
+  async GetShopingDetails(id) {
     const customer = await this.repository.FindCustomerById({ id });
 
     if (!customer) throw new Error("Customer not found");
@@ -117,7 +126,7 @@ class CustomerService {
     await PublishMessage(
       this.channel,
       "CustomerAddressAdded",
-      JSON.stringify(payload)
+      payload
     );
 
     console.log("📢 CustomerAddressAdded event published");
@@ -167,7 +176,7 @@ class CustomerService {
     await PublishMessage(
       this.channel,
       "CustomerOrderLinked",
-      JSON.stringify(payload)
+      payload
     );
 
     console.log("📢 CustomerOrderLinked event published");
@@ -197,6 +206,7 @@ class CustomerService {
         break;
 
       case "CREATE_ORDER":
+      case "OrderCreated":
         await this.ManageOrder(userId, order);
         break;
 
