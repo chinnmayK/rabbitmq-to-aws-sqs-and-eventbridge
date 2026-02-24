@@ -28,6 +28,11 @@ ECR_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 ########################################
+# ✅ ADD SQS QUEUE URL (NEW)
+########################################
+SQS_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/r2sqs-eb-customer-created-queue"
+
+########################################
 # Ensure Docker running
 ########################################
 if ! systemctl is-active --quiet docker; then
@@ -71,6 +76,9 @@ RABBITMQ_PASSWORD=$(echo "$RABBIT_SECRET" | jq -r '.password')
 APP_SECRET=$(echo "$JWT_SECRET" | jq -r '.jwt')
 EVENT_BUS_NAME="${PROJECT_NAME}-bus"
 
+########################################
+# Write .env file
+########################################
 cat > .env <<EOF
 ACCOUNT_ID=$ACCOUNT_ID
 AWS_REGION=$AWS_REGION
@@ -80,6 +88,7 @@ RABBITMQ_USERNAME=$RABBITMQ_USERNAME
 RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD
 APP_SECRET=$APP_SECRET
 EVENT_BUS_NAME=$EVENT_BUS_NAME
+SQS_QUEUE_URL=$SQS_QUEUE_URL
 EOF
 
 ########################################

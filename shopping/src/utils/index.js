@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const amqplib = require("amqplib");
+const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require("@aws-sdk/client-sqs");
 
 const {
   APP_SECRET,
@@ -21,7 +22,6 @@ module.exports.GeneratePassword = async (password, salt) => {
   return await bcrypt.hash(password, salt);
 };
 
-// ✅ FIXED (use bcrypt.compare instead of manual hash compare)
 module.exports.ValidatePassword = async (enteredPassword, savedPassword) => {
   return await bcrypt.compare(enteredPassword, savedPassword);
 };
@@ -33,23 +33,19 @@ module.exports.GenerateSignature = async (payload) => {
 module.exports.ValidateSignature = async (req) => {
   try {
     const signature = req.get("Authorization");
-
     if (!signature) return false;
 
     const payload = jwt.verify(signature.split(" ")[1], APP_SECRET);
     req.user = payload;
     return true;
-  } catch (err) {
+  } catch {
     return false;
   }
 };
 
 module.exports.FormateData = (data) => {
-  if (data) {
-    return { data };
-  } else {
-    throw new Error("Data Not found!");
-  }
+  if (data) return { data };
+  throw new Error("Data Not found!");
 };
 
 // ======================================================
@@ -92,7 +88,7 @@ module.exports.PublishMessage = async (channel, service, msg) => {
   console.log("📤 Message Sent to:", service);
 };
 
-// ================= SUBSCRIBE =================
+// ================= RABBITMQ SUBSCRIBE =================
 
 module.exports.SubscribeMessage = async (channel, service) => {
   const appQueue = await channel.assertQueue(SHOPPING_SERVICE, {
@@ -107,15 +103,75 @@ module.exports.SubscribeMessage = async (channel, service) => {
 
   channel.consume(appQueue.queue, async (data) => {
     if (data !== null) {
-      console.log("📥 Received Event");
+      console.log("📥 Received Event from RabbitMQ");
 
       const payload = data.content.toString();
-
       await service.SubscribeEvents(payload);
 
       channel.ack(data);
     }
   });
 
-  console.log("👂 Subscribed to Shopping Events");
+  console.log("👂 Subscribed to Shopping Events (RabbitMQ)");
+};
+
+// ======================================================
+// 🟡 SQS CONSUMER (NEW)
+// ======================================================
+
+module.exports.StartSQSConsumer = async (service) => {
+  const sqs = new SQSClient({
+    region: process.env.AWS_REGION,
+  });
+
+  const queueUrl = process.env.SQS_QUEUE_URL;
+
+  if (!queueUrl) {
+    console.warn("⚠️ SQS_QUEUE_URL not defined. Skipping SQS consumer.");
+    return;
+  }
+
+  console.log("🚀 Starting SQS Consumer...");
+
+  const poll = async () => {
+    try {
+      const command = new ReceiveMessageCommand({
+        QueueUrl: queueUrl,
+        MaxNumberOfMessages: 5,
+        WaitTimeSeconds: 20,
+      });
+
+      const response = await sqs.send(command);
+
+      if (response.Messages) {
+        for (const message of response.Messages) {
+          console.log("📥 Received Event from SQS");
+
+          const event = JSON.parse(message.Body);
+
+          // EventBridge wraps actual payload inside "detail"
+          const payload = JSON.stringify(event.detail);
+
+          await service.SubscribeEvents(payload);
+
+          // Delete after successful processing
+          await sqs.send(
+            new DeleteMessageCommand({
+              QueueUrl: queueUrl,
+              ReceiptHandle: message.ReceiptHandle,
+            })
+          );
+
+          console.log("🗑️ SQS message deleted");
+        }
+      }
+    } catch (err) {
+      console.error("❌ SQS polling error:", err);
+    }
+
+    // Continue polling
+    setImmediate(poll);
+  };
+
+  poll();
 };

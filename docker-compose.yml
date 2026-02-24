@@ -100,6 +100,7 @@ services:
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/shopping?authSource=admin
       MSG_QUEUE_URL: amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      SQS_QUEUE_URL: ${SQS_QUEUE_URL}
     networks:
       - app-network
 

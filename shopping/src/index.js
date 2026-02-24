@@ -3,12 +3,27 @@ const { PORT } = require('./config');
 const { databaseConnection } = require('./database');
 const expressApp = require('./express-app');
 
+const { CreateChannel, SubscribeMessage, StartSQSConsumer } = require('./utils');
+const ShoppingService = require('./services/shopping-service');
+
 const StartServer = async () => {
     try {
         const app = express();
 
         await databaseConnection();
         await expressApp(app);
+
+        // 🟢 Create RabbitMQ channel
+        const channel = await CreateChannel();
+
+        // 🟢 Initialize service with channel
+        const service = new ShoppingService(channel);
+
+        // 🟢 Start RabbitMQ consumer (existing)
+        await SubscribeMessage(channel, service);
+
+        // 🟢 Start SQS consumer (new)
+        StartSQSConsumer(service);
 
         app.listen(PORT, () => {
             console.log(`Shopping service listening on port ${PORT}`);

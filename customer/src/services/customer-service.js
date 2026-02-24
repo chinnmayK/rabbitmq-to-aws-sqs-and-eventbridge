@@ -11,7 +11,7 @@ const {
 class CustomerService {
   constructor(channel) {
     this.repository = new CustomerRepository();
-    this.channel = channel; // 👈 important
+    this.channel = channel;
   }
 
   // ================= SIGN UP =================
@@ -37,7 +37,7 @@ class CustomerService {
       _id: customer._id,
     });
 
-    // 🔥 PUBLISH EVENT (RabbitMQ + EventBridge)
+    // 🔥 Publish CustomerCreated
     const payload = {
       event: "CustomerCreated",
       data: {
@@ -105,6 +105,23 @@ class CustomerService {
       ...addressData,
     });
 
+    // 🔥 Publish CustomerAddressAdded
+    const payload = {
+      event: "CustomerAddressAdded",
+      data: {
+        userId: customerId,
+        address,
+      },
+    };
+
+    await PublishMessage(
+      this.channel,
+      "CustomerAddressAdded",
+      JSON.stringify(payload)
+    );
+
+    console.log("📢 CustomerAddressAdded event published");
+
     return FormateData(address);
   }
 
@@ -137,6 +154,23 @@ class CustomerService {
       customerId,
       order
     );
+
+    // 🔥 Publish CustomerOrderLinked
+    const payload = {
+      event: "CustomerOrderLinked",
+      data: {
+        userId: customerId,
+        order,
+      },
+    };
+
+    await PublishMessage(
+      this.channel,
+      "CustomerOrderLinked",
+      JSON.stringify(payload)
+    );
+
+    console.log("📢 CustomerOrderLinked event published");
 
     return FormateData(result);
   }
