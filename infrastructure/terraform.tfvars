@@ -1,3 +1,3 @@
-project_name = "node-microservices"
+project_name = "r2sqs-eb"
 aws_region = "ap-south-1"
-github_repo  = "chinnmayK/nodejs-microservices"
+github_repo  = "chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge"

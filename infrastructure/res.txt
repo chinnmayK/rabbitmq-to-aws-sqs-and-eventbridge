@@ -1,0 +1,1679 @@
+# module.cicd.aws_codebuild_project.microservices_build:
+resource "aws_codebuild_project" "microservices_build" {
+    arn                    = "arn:aws:codebuild:ap-south-1:202533520289:project/r2sqs-eb-build"
+    badge_enabled          = false
+    badge_url              = [90mnull[0m[0m
+    build_timeout          = 20
+    concurrent_build_limit = 0
+    description            = "Build all microservices docker images"
+    encryption_key         = "arn:aws:kms:ap-south-1:202533520289:alias/aws/s3"
+    id                     = "arn:aws:codebuild:ap-south-1:202533520289:project/r2sqs-eb-build"
+    name                   = "r2sqs-eb-build"
+    project_visibility     = "PRIVATE"
+    public_project_alias   = [90mnull[0m[0m
+    queued_timeout         = 480
+    resource_access_role   = [90mnull[0m[0m
+    service_role           = "arn:aws:iam::202533520289:role/r2sqs-eb-codebuild-role"
+    source_version         = [90mnull[0m[0m
+    tags_all               = {}
+
+    artifacts {
+        artifact_identifier    = [90mnull[0m[0m
+        bucket_owner_access    = [90mnull[0m[0m
+        encryption_disabled    = false
+        location               = [90mnull[0m[0m
+        name                   = "r2sqs-eb-build"
+        namespace_type         = [90mnull[0m[0m
+        override_artifact_name = false
+        packaging              = "NONE"
+        path                   = [90mnull[0m[0m
+        type                   = "CODEPIPELINE"
+    }
+
+    cache {
+        location = [90mnull[0m[0m
+        modes    = []
+        type     = "NO_CACHE"
+    }
+
+    environment {
+        certificate                 = [90mnull[0m[0m
+        compute_type                = "BUILD_GENERAL1_SMALL"
+        image                       = "aws/codebuild/standard:7.0"
+        image_pull_credentials_type = "CODEBUILD"
+        privileged_mode             = true
+        type                        = "LINUX_CONTAINER"
+
+        environment_variable {
+            name  = "AWS_DEFAULT_REGION"
+            type  = "PLAINTEXT"
+            value = "ap-south-1"
+        }
+        environment_variable {
+            name  = "PROJECT_NAME"
+            type  = "PLAINTEXT"
+            value = "r2sqs-eb"
+        }
+    }
+
+    logs_config {
+        cloudwatch_logs {
+            group_name  = [90mnull[0m[0m
+            status      = "ENABLED"
+            stream_name = [90mnull[0m[0m
+        }
+        s3_logs {
+            bucket_owner_access = [90mnull[0m[0m
+            encryption_disabled = false
+            location            = [90mnull[0m[0m
+            status              = "DISABLED"
+        }
+    }
+
+    source {
+        buildspec           = "buildspec.yml"
+        git_clone_depth     = 0
+        insecure_ssl        = false
+        location            = [90mnull[0m[0m
+        report_build_status = false
+        type                = "CODEPIPELINE"
+    }
+}
+
+# module.cicd.aws_codedeploy_app.app:
+resource "aws_codedeploy_app" "app" {
+    application_id      = "db94d994-d595-4493-b11a-f4a206a8161c"
+    arn                 = "arn:aws:codedeploy:ap-south-1:202533520289:application:r2sqs-eb-app"
+    compute_platform    = "Server"
+    github_account_name = [90mnull[0m[0m
+    id                  = "db94d994-d595-4493-b11a-f4a206a8161c:r2sqs-eb-app"
+    linked_to_github    = false
+    name                = "r2sqs-eb-app"
+    tags_all            = {}
+}
+
+# module.cicd.aws_codedeploy_deployment_group.deployment_group:
+resource "aws_codedeploy_deployment_group" "deployment_group" {
+    app_name                    = "r2sqs-eb-app"
+    arn                         = "arn:aws:codedeploy:ap-south-1:202533520289:deploymentgroup:r2sqs-eb-app/r2sqs-eb-dg"
+    compute_platform            = "Server"
+    deployment_config_name      = "CodeDeployDefault.AllAtOnce"
+    deployment_group_id         = "ed76589a-e238-47d6-9b24-46e895546b9c"
+    deployment_group_name       = "r2sqs-eb-dg"
+    id                          = "ed76589a-e238-47d6-9b24-46e895546b9c"
+    outdated_instances_strategy = "UPDATE"
+    service_role_arn            = "arn:aws:iam::202533520289:role/r2sqs-eb-codedeploy-role"
+    tags_all                    = {}
+    termination_hook_enabled    = false
+
+    deployment_style {
+        deployment_option = "WITHOUT_TRAFFIC_CONTROL"
+        deployment_type   = "IN_PLACE"
+    }
+
+    ec2_tag_set {
+        ec2_tag_filter {
+            key   = "Name"
+            type  = "KEY_AND_VALUE"
+            value = "r2sqs-eb-ec2"
+        }
+    }
+}
+
+# module.cicd.aws_codepipeline.microservices_pipeline:
+resource "aws_codepipeline" "microservices_pipeline" {
+    arn            = "arn:aws:codepipeline:ap-south-1:202533520289:r2sqs-eb-pipeline"
+    execution_mode = "SUPERSEDED"
+    id             = "r2sqs-eb-pipeline"
+    name           = "r2sqs-eb-pipeline"
+    pipeline_type  = "V1"
+    role_arn       = "arn:aws:iam::202533520289:role/r2sqs-eb-codepipeline-role"
+    tags_all       = {}
+    trigger_all    = []
+
+    artifact_store {
+        location = "r2sqs-eb-artifacts"
+        region   = [90mnull[0m[0m
+        type     = "S3"
+
+        encryption_key {
+            id   = "alias/aws/s3"
+            type = "KMS"
+        }
+    }
+
+    stage {
+        name = "Source"
+
+        action {
+            category           = "Source"
+            configuration      = {
+                "BranchName"       = "main"
+                "ConnectionArn"    = "arn:aws:codestar-connections:ap-south-1:202533520289:connection/2ac6befd-1973-497f-8080-03f6895d0046"
+                "DetectChanges"    = "true"
+                "FullRepositoryId" = "chinnmayK/nodejs-microservices"
+            }
+            name               = "GitHub_Source"
+            namespace          = [90mnull[0m[0m
+            output_artifacts   = [
+                "source_output",
+            ]
+            owner              = "AWS"
+            provider           = "CodeStarSourceConnection"
+            region             = [90mnull[0m[0m
+            role_arn           = [90mnull[0m[0m
+            run_order          = 1
+            timeout_in_minutes = 0
+            version            = "1"
+        }
+    }
+    stage {
+        name = "Build"
+
+        action {
+            category           = "Build"
+            configuration      = {
+                "ProjectName" = "r2sqs-eb-build"
+            }
+            input_artifacts    = [
+                "source_output",
+            ]
+            name               = "Docker_Build"
+            namespace          = [90mnull[0m[0m
+            output_artifacts   = [
+                "build_output",
+            ]
+            owner              = "AWS"
+            provider           = "CodeBuild"
+            region             = [90mnull[0m[0m
+            role_arn           = [90mnull[0m[0m
+            run_order          = 1
+            timeout_in_minutes = 0
+            version            = "1"
+        }
+    }
+    stage {
+        name = "Deploy"
+
+        action {
+            category           = "Deploy"
+            configuration      = {
+                "ApplicationName"     = "r2sqs-eb-app"
+                "DeploymentGroupName" = "r2sqs-eb-dg"
+            }
+            input_artifacts    = [
+                "build_output",
+            ]
+            name               = "DeployToEC2"
+            namespace          = [90mnull[0m[0m
+            owner              = "AWS"
+            provider           = "CodeDeploy"
+            region             = [90mnull[0m[0m
+            role_arn           = [90mnull[0m[0m
+            run_order          = 1
+            timeout_in_minutes = 0
+            version            = "1"
+        }
+    }
+}
+
+# module.cicd.aws_codestarconnections_connection.github:
+resource "aws_codestarconnections_connection" "github" {
+    arn               = "arn:aws:codestar-connections:ap-south-1:202533520289:connection/2ac6befd-1973-497f-8080-03f6895d0046"
+    connection_status = "PENDING"
+    host_arn          = [90mnull[0m[0m
+    id                = "arn:aws:codestar-connections:ap-south-1:202533520289:connection/2ac6befd-1973-497f-8080-03f6895d0046"
+    name              = "r2sqs-eb-gc"
+    provider_type     = "GitHub"
+    tags_all          = {}
+}
+
+# module.cicd.aws_s3_bucket.artifact_bucket:
+resource "aws_s3_bucket" "artifact_bucket" {
+    acceleration_status         = [90mnull[0m[0m
+    arn                         = "arn:aws:s3:::r2sqs-eb-artifacts"
+    bucket                      = "r2sqs-eb-artifacts"
+    bucket_domain_name          = "r2sqs-eb-artifacts.s3.amazonaws.com"
+    bucket_prefix               = [90mnull[0m[0m
+    bucket_regional_domain_name = "r2sqs-eb-artifacts.s3.ap-south-1.amazonaws.com"
+    force_destroy               = true
+    hosted_zone_id              = "Z11RGJOFQNVJUP"
+    id                          = "r2sqs-eb-artifacts"
+    object_lock_enabled         = false
+    policy                      = [90mnull[0m[0m
+    region                      = "ap-south-1"
+    request_payer               = "BucketOwner"
+    tags_all                    = {}
+
+    grant {
+        id          = "e098d78668d25efc5377067e18820e741e26d34d3c4c1787acf3efacb633e883"
+        permissions = [
+            "FULL_CONTROL",
+        ]
+        type        = "CanonicalUser"
+        uri         = [90mnull[0m[0m
+    }
+
+    server_side_encryption_configuration {
+        rule {
+            bucket_key_enabled = false
+
+            apply_server_side_encryption_by_default {
+                kms_master_key_id = [90mnull[0m[0m
+                sse_algorithm     = "AES256"
+            }
+        }
+    }
+
+    versioning {
+        enabled    = false
+        mfa_delete = false
+    }
+}
+
+# module.cicd.aws_s3_bucket_server_side_encryption_configuration.artifact_encryption:
+resource "aws_s3_bucket_server_side_encryption_configuration" "artifact_encryption" {
+    bucket                = "r2sqs-eb-artifacts"
+    expected_bucket_owner = [90mnull[0m[0m
+    id                    = "r2sqs-eb-artifacts"
+
+    rule {
+        apply_server_side_encryption_by_default {
+            kms_master_key_id = [90mnull[0m[0m
+            sse_algorithm     = "AES256"
+        }
+    }
+}
+
+# module.cicd.aws_s3_bucket_versioning.artifact_versioning:
+resource "aws_s3_bucket_versioning" "artifact_versioning" {
+    bucket                = "r2sqs-eb-artifacts"
+    expected_bucket_owner = [90mnull[0m[0m
+    id                    = "r2sqs-eb-artifacts"
+
+    versioning_configuration {
+        mfa_delete = [90mnull[0m[0m
+        status     = "Enabled"
+    }
+}
+# module.ec2.aws_instance.app:
+resource "aws_instance" "app" {
+    ami                                  = "ami-019715e0d74f695be"
+    arn                                  = "arn:aws:ec2:ap-south-1:202533520289:instance/i-0614f10faa9714b82"
+    associate_public_ip_address          = true
+    availability_zone                    = "ap-south-1a"
+    cpu_core_count                       = 1
+    cpu_threads_per_core                 = 2
+    disable_api_stop                     = false
+    disable_api_termination              = false
+    ebs_optimized                        = false
+    get_password_data                    = false
+    hibernation                          = false
+    host_id                              = [90mnull[0m[0m
+    iam_instance_profile                 = "r2sqs-eb-instance-profile"
+    id                                   = "i-0614f10faa9714b82"
+    instance_initiated_shutdown_behavior = "stop"
+    instance_lifecycle                   = [90mnull[0m[0m
+    instance_state                       = "running"
+    instance_type                        = "t3.medium"
+    ipv6_address_count                   = 0
+    ipv6_addresses                       = []
+    key_name                             = "my-key"
+    monitoring                           = false
+    outpost_arn                          = [90mnull[0m[0m
+    password_data                        = [90mnull[0m[0m
+    placement_group                      = [90mnull[0m[0m
+    placement_partition_number           = 0
+    primary_network_interface_id         = "eni-06ab973c1fde2e21e"
+    private_dns                          = "ip-10-0-1-205.ap-south-1.compute.internal"
+    private_ip                           = "10.0.1.205"
+    public_dns                           = "ec2-43-205-203-71.ap-south-1.compute.amazonaws.com"
+    public_ip                            = "43.205.203.71"
+    secondary_private_ips                = []
+    security_groups                      = []
+    source_dest_check                    = true
+    spot_instance_request_id             = [90mnull[0m[0m
+    subnet_id                            = "subnet-045b9fe2744cffdf9"
+    tags                                 = {
+        "Name" = "r2sqs-eb-ec2"
+    }
+    tags_all                             = {
+        "Name" = "r2sqs-eb-ec2"
+    }
+    tenancy                              = "default"
+    user_data_base64                     = "IyEvYmluL2Jhc2gKc2V0IC1ldXhvIHBpcGVmYWlsCgpleGVjID4gPih0ZWUgL3Zhci9sb2cvdXNlci1kYXRhLmxvZyB8IGxvZ2dlciAtdCB1c2VyLWRhdGEgLXMgMj4vZGV2L2NvbnNvbGUpIDI+JjEKCmVjaG8gIj09PT09IFN0YXJ0aW5nIEVDMiBCb290c3RyYXAgPT09PT0iCgp0cmFwICdlY2hvICJFUlJPUiBvbiBsaW5lICRMSU5FTk8iOyBleGl0IDEnIEVSUgoKZXhwb3J0IERFQklBTl9GUk9OVEVORD1ub25pbnRlcmFjdGl2ZQoKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwojIFdhaXQgZm9yIGFwdCBsb2NrCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKZWNobyAiV2FpdGluZyBmb3IgYXB0IGxvY2suLi4iCndoaWxlIGZ1c2VyIC92YXIvbGliL2Rwa2cvbG9jay1mcm9udGVuZCA+L2Rldi9udWxsIDI+JjE7IGRvCiAgc2xlZXAgNQpkb25lCgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiMgRGV0ZWN0IFJlZ2lvbgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjClRPS0VOPSQoY3VybCAtcyAtWCBQVVQgImh0dHA6Ly8xNjkuMjU0LjE2OS4yNTQvbGF0ZXN0L2FwaS90b2tlbiIgXAogIC1IICJYLWF3cy1lYzItbWV0YWRhdGEtdG9rZW4tdHRsLXNlY29uZHM6IDIxNjAwIikKClJFR0lPTj0kKGN1cmwgLXMgXAogIC1IICJYLWF3cy1lYzItbWV0YWRhdGEtdG9rZW46ICRUT0tFTiIgXAogIGh0dHA6Ly8xNjkuMjU0LjE2OS4yNTQvbGF0ZXN0L2R5bmFtaWMvaW5zdGFuY2UtaWRlbnRpdHkvZG9jdW1lbnQgXAogIHwgZ3JlcCByZWdpb24gXAogIHwgYXdrIC1GXCIgJ3twcmludCAkNH0nKQoKaWYgWyAteiAiJFJFR0lPTiIgXTsgdGhlbgogIGVjaG8gIkZhaWxlZCB0byBkZXRlY3QgcmVnaW9uIgogIGV4aXQgMQpmaQoKZWNobyAiRGV0ZWN0ZWQgcmVnaW9uOiAkUkVHSU9OIgpleHBvcnQgQVdTX1JFR0lPTj0iJFJFR0lPTiIKCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKIyBVcGRhdGUgU3lzdGVtCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKYXB0LWdldCBjbGVhbgpybSAtcmYgL3Zhci9saWIvYXB0L2xpc3RzLyoKYXB0LWdldCB1cGRhdGUgLXkKYXB0LWdldCB1cGdyYWRlIC15CmFwdC1nZXQgaW5zdGFsbCAteSBqcQphcHQtZ2V0IGluc3RhbGwgLXkgXAogIGNhLWNlcnRpZmljYXRlcyBcCiAgY3VybCBcCiAgZ251cGcgXAogIGxzYi1yZWxlYXNlIFwKICB1bnppcCBcCiAgd2dldCBcCiAgZ2l0IFwKICBydWJ5LWZ1bGwgXAogIHNvZnR3YXJlLXByb3BlcnRpZXMtY29tbW9uCgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiMgSW5zdGFsbCBEb2NrZXIKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwppbnN0YWxsIC1tIDA3NTUgLWQgL2V0Yy9hcHQva2V5cmluZ3MKCmN1cmwgLWZzU0wgaHR0cHM6Ly9kb3dubG9hZC5kb2NrZXIuY29tL2xpbnV4L3VidW50dS9ncGcgXAogIHwgZ3BnIC0tZGVhcm1vciAtbyAvZXRjL2FwdC9rZXlyaW5ncy9kb2NrZXIuZ3BnCgpjaG1vZCBhK3IgL2V0Yy9hcHQva2V5cmluZ3MvZG9ja2VyLmdwZwoKVUJVTlRVX0NPREVOQU1FPSQobHNiX3JlbGVhc2UgLWNzKQoKZWNobyBcCiAgImRlYiBbYXJjaD0kKGRwa2cgLS1wcmludC1hcmNoaXRlY3R1cmUpIHNpZ25lZC1ieT0vZXRjL2FwdC9rZXlyaW5ncy9kb2NrZXIuZ3BnXSBcCiAgaHR0cHM6Ly9kb3dubG9hZC5kb2NrZXIuY29tL2xpbnV4L3VidW50dSBcCiAgJHtVQlVOVFVfQ09ERU5BTUV9IHN0YWJsZSIgXAogID4gL2V0Yy9hcHQvc291cmNlcy5saXN0LmQvZG9ja2VyLmxpc3QKCmFwdC1nZXQgdXBkYXRlIC15CgphcHQtZ2V0IGluc3RhbGwgLXkgXAogIGRvY2tlci1jZSBcCiAgZG9ja2VyLWNlLWNsaSBcCiAgY29udGFpbmVyZC5pbyBcCiAgZG9ja2VyLWJ1aWxkeC1wbHVnaW4gXAogIGRvY2tlci1jb21wb3NlLXBsdWdpbgoKc3lzdGVtY3RsIGVuYWJsZSBkb2NrZXIKc3lzdGVtY3RsIHN0YXJ0IGRvY2tlcgpzbGVlcCAxNQoKaWYgISBzeXN0ZW1jdGwgaXMtYWN0aXZlIC0tcXVpZXQgZG9ja2VyOyB0aGVuCiAgZWNobyAiRG9ja2VyIGZhaWxlZCB0byBzdGFydCIKICBleGl0IDEKZmkKCnVzZXJtb2QgLWFHIGRvY2tlciB1YnVudHUKCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKIyBJbnN0YWxsIEFXUyBDTEkgdjIKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwpjZCAvdG1wCmN1cmwgLXMgImh0dHBzOi8vYXdzY2xpLmFtYXpvbmF3cy5jb20vYXdzY2xpLWV4ZS1saW51eC14ODZfNjQuemlwIiAtbyAiYXdzY2xpdjIuemlwIgp1bnppcCAtbyBhd3NjbGl2Mi56aXAKLi9hd3MvaW5zdGFsbAoKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwojIEluc3RhbGwgbmdyb2sKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwpjZCAvdG1wCndnZXQgLXEgaHR0cHM6Ly9iaW4uZXF1aW5veC5pby9jL2JOeWoxbVFWWTRjL25ncm9rLXYzLXN0YWJsZS1saW51eC1hbWQ2NC50Z3oKdGFyIC14emYgbmdyb2stdjMtc3RhYmxlLWxpbnV4LWFtZDY0LnRnegptdiBuZ3JvayAvdXNyL2xvY2FsL2Jpbi8KY2htb2QgK3ggL3Vzci9sb2NhbC9iaW4vbmdyb2sKCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKIyBGZXRjaCBuZ3JvayB0b2tlbgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCk5HUk9LX1RPS0VOPSQoYXdzIHNlY3JldHNtYW5hZ2VyIGdldC1zZWNyZXQtdmFsdWUgXAogIC0tc2VjcmV0LWlkIG5vZGUtbWljcm9zZXJ2aWNlcy1uZ3Jvay10b2tlbiBcCiAgLS1yZWdpb24gIiRBV1NfUkVHSU9OIiBcCiAgLS1xdWVyeSBTZWNyZXRTdHJpbmcgXAogIC0tb3V0cHV0IHRleHQpCgppZiBbIC16ICIkTkdST0tfVE9LRU4iIF07IHRoZW4KICBlY2hvICJFUlJPUjogTkdST0sgdG9rZW4gbm90IGZvdW5kIgogIGV4aXQgMQpmaQoKbWtkaXIgLXAgL3Jvb3QvLmNvbmZpZy9uZ3JvawoKbmdyb2sgY29uZmlnIGFkZC1hdXRodG9rZW4gIiROR1JPS19UT0tFTiIgXAogIC0tY29uZmlnIC9yb290Ly5jb25maWcvbmdyb2svbmdyb2sueW1sCgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiMgQ3JlYXRlIHN5c3RlbWQgc2VydmljZSAoRE8gTk9UIFNUQVJUIEhFUkUpCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKY2F0IDw8RU9GID4gL2V0Yy9zeXN0ZW1kL3N5c3RlbS9uZ3Jvay5zZXJ2aWNlCltVbml0XQpEZXNjcmlwdGlvbj1uZ3JvayB0dW5uZWwKQWZ0ZXI9bmV0d29yay50YXJnZXQgZG9ja2VyLnNlcnZpY2UKUmVxdWlyZXM9ZG9ja2VyLnNlcnZpY2UKCltTZXJ2aWNlXQpUeXBlPXNpbXBsZQpFeGVjU3RhcnQ9L3Vzci9sb2NhbC9iaW4vbmdyb2sgaHR0cCA4MDAwIC0tY29uZmlnIC9yb290Ly5jb25maWcvbmdyb2svbmdyb2sueW1sClJlc3RhcnQ9YWx3YXlzClJlc3RhcnRTZWM9NQpVc2VyPXJvb3QKCltJbnN0YWxsXQpXYW50ZWRCeT1tdWx0aS11c2VyLnRhcmdldApFT0YKCnN5c3RlbWN0bCBkYWVtb24tcmVsb2FkCnN5c3RlbWN0bCBlbmFibGUgbmdyb2sKCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKIyBJbnN0YWxsIENvZGVEZXBsb3kgQWdlbnQKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwpjZCAvaG9tZS91YnVudHUKCndnZXQgLXEgaHR0cHM6Ly9hd3MtY29kZWRlcGxveS0ke1JFR0lPTn0uczMuJHtSRUdJT059LmFtYXpvbmF3cy5jb20vbGF0ZXN0L2luc3RhbGwgfHwgXAp3Z2V0IC1xIGh0dHBzOi8vYXdzLWNvZGVkZXBsb3ktJHtSRUdJT059LnMzLmFtYXpvbmF3cy5jb20vbGF0ZXN0L2luc3RhbGwKCmNobW9kICt4IGluc3RhbGwKLi9pbnN0YWxsIGF1dG8KCnN5c3RlbWN0bCBlbmFibGUgY29kZWRlcGxveS1hZ2VudApzeXN0ZW1jdGwgc3RhcnQgY29kZWRlcGxveS1hZ2VudApzbGVlcCA1CgojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiMgQ3JlYXRlIEFwcGxpY2F0aW9uIERpcmVjdG9yeQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCm1rZGlyIC1wIC9vcHQvbm9kZS1hcHAKY2hvd24gLVIgdWJ1bnR1OnVidW50dSAvb3B0L25vZGUtYXBwCgplY2hvICI9PT09PSBFQzIgQm9vdHN0cmFwIENvbXBsZXRlID09PT09Ig=="
+    user_data_replace_on_change          = false
+    vpc_security_group_ids               = [
+        "sg-0cbfb7b13f41cba45",
+    ]
+
+    capacity_reservation_specification {
+        capacity_reservation_preference = "open"
+    }
+
+    cpu_options {
+        amd_sev_snp      = [90mnull[0m[0m
+        core_count       = 1
+        threads_per_core = 2
+    }
+
+    credit_specification {
+        cpu_credits = "unlimited"
+    }
+
+    enclave_options {
+        enabled = false
+    }
+
+    maintenance_options {
+        auto_recovery = "default"
+    }
+
+    metadata_options {
+        http_endpoint               = "enabled"
+        http_protocol_ipv6          = "disabled"
+        http_put_response_hop_limit = 2
+        http_tokens                 = "required"
+        instance_metadata_tags      = "disabled"
+    }
+
+    private_dns_name_options {
+        enable_resource_name_dns_a_record    = false
+        enable_resource_name_dns_aaaa_record = false
+        hostname_type                        = "ip-name"
+    }
+
+    root_block_device {
+        delete_on_termination = true
+        device_name           = "/dev/sda1"
+        encrypted             = false
+        iops                  = 3000
+        kms_key_id            = [90mnull[0m[0m
+        tags_all              = {}
+        throughput            = 125
+        volume_id             = "vol-0235bfeec78d64810"
+        volume_size           = 30
+        volume_type           = "gp3"
+    }
+}
+# module.ecr.aws_ecr_lifecycle_policy.lifecycle["customer"]:
+resource "aws_ecr_lifecycle_policy" "lifecycle" {
+    id          = "r2sqs-eb-customer"
+    policy      = jsonencode(
+        {
+            rules = [
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Expire untagged images"
+                    rulePriority = 1
+                    selection    = {
+                        countNumber = 1
+                        countType   = "imageCountMoreThan"
+                        tagStatus   = "untagged"
+                    }
+                },
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Keep last 10 tagged images"
+                    rulePriority = 2
+                    selection    = {
+                        countNumber   = 10
+                        countType     = "imageCountMoreThan"
+                        tagPrefixList = [
+                            "latest",
+                        ]
+                        tagStatus     = "tagged"
+                    }
+                },
+            ]
+        }
+    )
+    registry_id = "202533520289"
+    repository  = "r2sqs-eb-customer"
+}
+
+# module.ecr.aws_ecr_lifecycle_policy.lifecycle["gateway"]:
+resource "aws_ecr_lifecycle_policy" "lifecycle" {
+    id          = "r2sqs-eb-gateway"
+    policy      = jsonencode(
+        {
+            rules = [
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Expire untagged images"
+                    rulePriority = 1
+                    selection    = {
+                        countNumber = 1
+                        countType   = "imageCountMoreThan"
+                        tagStatus   = "untagged"
+                    }
+                },
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Keep last 10 tagged images"
+                    rulePriority = 2
+                    selection    = {
+                        countNumber   = 10
+                        countType     = "imageCountMoreThan"
+                        tagPrefixList = [
+                            "latest",
+                        ]
+                        tagStatus     = "tagged"
+                    }
+                },
+            ]
+        }
+    )
+    registry_id = "202533520289"
+    repository  = "r2sqs-eb-gateway"
+}
+
+# module.ecr.aws_ecr_lifecycle_policy.lifecycle["products"]:
+resource "aws_ecr_lifecycle_policy" "lifecycle" {
+    id          = "r2sqs-eb-products"
+    policy      = jsonencode(
+        {
+            rules = [
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Expire untagged images"
+                    rulePriority = 1
+                    selection    = {
+                        countNumber = 1
+                        countType   = "imageCountMoreThan"
+                        tagStatus   = "untagged"
+                    }
+                },
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Keep last 10 tagged images"
+                    rulePriority = 2
+                    selection    = {
+                        countNumber   = 10
+                        countType     = "imageCountMoreThan"
+                        tagPrefixList = [
+                            "latest",
+                        ]
+                        tagStatus     = "tagged"
+                    }
+                },
+            ]
+        }
+    )
+    registry_id = "202533520289"
+    repository  = "r2sqs-eb-products"
+}
+
+# module.ecr.aws_ecr_lifecycle_policy.lifecycle["shopping"]:
+resource "aws_ecr_lifecycle_policy" "lifecycle" {
+    id          = "r2sqs-eb-shopping"
+    policy      = jsonencode(
+        {
+            rules = [
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Expire untagged images"
+                    rulePriority = 1
+                    selection    = {
+                        countNumber = 1
+                        countType   = "imageCountMoreThan"
+                        tagStatus   = "untagged"
+                    }
+                },
+                {
+                    action       = {
+                        type = "expire"
+                    }
+                    description  = "Keep last 10 tagged images"
+                    rulePriority = 2
+                    selection    = {
+                        countNumber   = 10
+                        countType     = "imageCountMoreThan"
+                        tagPrefixList = [
+                            "latest",
+                        ]
+                        tagStatus     = "tagged"
+                    }
+                },
+            ]
+        }
+    )
+    registry_id = "202533520289"
+    repository  = "r2sqs-eb-shopping"
+}
+
+# module.ecr.aws_ecr_repository.repos["customer"]:
+resource "aws_ecr_repository" "repos" {
+    arn                  = "arn:aws:ecr:ap-south-1:202533520289:repository/r2sqs-eb-customer"
+    force_delete         = true
+    id                   = "r2sqs-eb-customer"
+    image_tag_mutability = "MUTABLE"
+    name                 = "r2sqs-eb-customer"
+    registry_id          = "202533520289"
+    repository_url       = "202533520289.dkr.ecr.ap-south-1.amazonaws.com/r2sqs-eb-customer"
+    tags                 = {
+        "Name" = "r2sqs-eb-customer"
+    }
+    tags_all             = {
+        "Name" = "r2sqs-eb-customer"
+    }
+
+    encryption_configuration {
+        encryption_type = "AES256"
+        kms_key         = [90mnull[0m[0m
+    }
+
+    image_scanning_configuration {
+        scan_on_push = true
+    }
+}
+
+# module.ecr.aws_ecr_repository.repos["gateway"]:
+resource "aws_ecr_repository" "repos" {
+    arn                  = "arn:aws:ecr:ap-south-1:202533520289:repository/r2sqs-eb-gateway"
+    force_delete         = true
+    id                   = "r2sqs-eb-gateway"
+    image_tag_mutability = "MUTABLE"
+    name                 = "r2sqs-eb-gateway"
+    registry_id          = "202533520289"
+    repository_url       = "202533520289.dkr.ecr.ap-south-1.amazonaws.com/r2sqs-eb-gateway"
+    tags                 = {
+        "Name" = "r2sqs-eb-gateway"
+    }
+    tags_all             = {
+        "Name" = "r2sqs-eb-gateway"
+    }
+
+    encryption_configuration {
+        encryption_type = "AES256"
+        kms_key         = [90mnull[0m[0m
+    }
+
+    image_scanning_configuration {
+        scan_on_push = true
+    }
+}
+
+# module.ecr.aws_ecr_repository.repos["products"]:
+resource "aws_ecr_repository" "repos" {
+    arn                  = "arn:aws:ecr:ap-south-1:202533520289:repository/r2sqs-eb-products"
+    force_delete         = true
+    id                   = "r2sqs-eb-products"
+    image_tag_mutability = "MUTABLE"
+    name                 = "r2sqs-eb-products"
+    registry_id          = "202533520289"
+    repository_url       = "202533520289.dkr.ecr.ap-south-1.amazonaws.com/r2sqs-eb-products"
+    tags                 = {
+        "Name" = "r2sqs-eb-products"
+    }
+    tags_all             = {
+        "Name" = "r2sqs-eb-products"
+    }
+
+    encryption_configuration {
+        encryption_type = "AES256"
+        kms_key         = [90mnull[0m[0m
+    }
+
+    image_scanning_configuration {
+        scan_on_push = true
+    }
+}
+
+# module.ecr.aws_ecr_repository.repos["shopping"]:
+resource "aws_ecr_repository" "repos" {
+    arn                  = "arn:aws:ecr:ap-south-1:202533520289:repository/r2sqs-eb-shopping"
+    force_delete         = true
+    id                   = "r2sqs-eb-shopping"
+    image_tag_mutability = "MUTABLE"
+    name                 = "r2sqs-eb-shopping"
+    registry_id          = "202533520289"
+    repository_url       = "202533520289.dkr.ecr.ap-south-1.amazonaws.com/r2sqs-eb-shopping"
+    tags                 = {
+        "Name" = "r2sqs-eb-shopping"
+    }
+    tags_all             = {
+        "Name" = "r2sqs-eb-shopping"
+    }
+
+    encryption_configuration {
+        encryption_type = "AES256"
+        kms_key         = [90mnull[0m[0m
+    }
+
+    image_scanning_configuration {
+        scan_on_push = true
+    }
+}
+# module.iam.aws_iam_instance_profile.ec2_profile:
+resource "aws_iam_instance_profile" "ec2_profile" {
+    arn         = "arn:aws:iam::202533520289:instance-profile/r2sqs-eb-instance-profile"
+    create_date = "2026-02-24T08:34:02Z"
+    id          = "r2sqs-eb-instance-profile"
+    name        = "r2sqs-eb-instance-profile"
+    name_prefix = [90mnull[0m[0m
+    path        = "/"
+    role        = "r2sqs-eb-ec2-role"
+    tags_all    = {}
+    unique_id   = "AIPAS6J7QIOQRRM3HRVKU"
+}
+
+# module.iam.aws_iam_policy.ec2_elasticache_minimal:
+resource "aws_iam_policy" "ec2_elasticache_minimal" {
+    arn              = "arn:aws:iam::202533520289:policy/r2sqs-eb-elasticache-minimal"
+    attachment_count = 0
+    description      = [90mnull[0m[0m
+    id               = "arn:aws:iam::202533520289:policy/r2sqs-eb-elasticache-minimal"
+    name             = "r2sqs-eb-elasticache-minimal"
+    name_prefix      = [90mnull[0m[0m
+    path             = "/"
+    policy           = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "elasticache:DescribeCacheClusters",
+                        "elasticache:DescribeReplicationGroups",
+                        "elasticache:ListTagsForResource",
+                    ]
+                    Effect   = "Allow"
+                    Resource = "*"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    policy_id        = "ANPAS6J7QIOQWIUK3QEAH"
+    tags_all         = {}
+}
+
+# module.iam.aws_iam_policy.ec2_s3_artifacts:
+resource "aws_iam_policy" "ec2_s3_artifacts" {
+    arn              = "arn:aws:iam::202533520289:policy/r2sqs-eb-ec2-s3-artifacts"
+    attachment_count = 0
+    description      = [90mnull[0m[0m
+    id               = "arn:aws:iam::202533520289:policy/r2sqs-eb-ec2-s3-artifacts"
+    name             = "r2sqs-eb-ec2-s3-artifacts"
+    name_prefix      = [90mnull[0m[0m
+    path             = "/"
+    policy           = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "s3:GetObject",
+                        "s3:GetObjectVersion",
+                        "s3:GetBucketLocation",
+                        "s3:ListBucket",
+                    ]
+                    Effect   = "Allow"
+                    Resource = [
+                        "arn:aws:s3:::r2sqs-eb-artifacts",
+                        "arn:aws:s3:::r2sqs-eb-artifacts/*",
+                    ]
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    policy_id        = "ANPAS6J7QIOQS72FXU7YT"
+    tags_all         = {}
+}
+
+# module.iam.aws_iam_role.codebuild_role:
+resource "aws_iam_role" "codebuild_role" {
+    arn                   = "arn:aws:iam::202533520289:role/r2sqs-eb-codebuild-role"
+    assume_role_policy    = jsonencode(
+        {
+            Statement = [
+                {
+                    Action    = "sts:AssumeRole"
+                    Effect    = "Allow"
+                    Principal = {
+                        Service = "codebuild.amazonaws.com"
+                    }
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    create_date           = "2026-02-24T08:34:00Z"
+    description           = [90mnull[0m[0m
+    force_detach_policies = false
+    id                    = "r2sqs-eb-codebuild-role"
+    managed_policy_arns   = []
+    max_session_duration  = 3600
+    name                  = "r2sqs-eb-codebuild-role"
+    name_prefix           = [90mnull[0m[0m
+    path                  = "/"
+    permissions_boundary  = [90mnull[0m[0m
+    tags_all              = {}
+    unique_id             = "AROAS6J7QIOQ5F6UYCWEI"
+}
+
+# module.iam.aws_iam_role.codedeploy_role:
+resource "aws_iam_role" "codedeploy_role" {
+    arn                   = "arn:aws:iam::202533520289:role/r2sqs-eb-codedeploy-role"
+    assume_role_policy    = jsonencode(
+        {
+            Statement = [
+                {
+                    Action    = "sts:AssumeRole"
+                    Effect    = "Allow"
+                    Principal = {
+                        Service = "codedeploy.amazonaws.com"
+                    }
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    create_date           = "2026-02-24T08:34:00Z"
+    description           = [90mnull[0m[0m
+    force_detach_policies = false
+    id                    = "r2sqs-eb-codedeploy-role"
+    managed_policy_arns   = []
+    max_session_duration  = 3600
+    name                  = "r2sqs-eb-codedeploy-role"
+    name_prefix           = [90mnull[0m[0m
+    path                  = "/"
+    permissions_boundary  = [90mnull[0m[0m
+    tags_all              = {}
+    unique_id             = "AROAS6J7QIOQ4BGGTV5FE"
+}
+
+# module.iam.aws_iam_role.codepipeline_role:
+resource "aws_iam_role" "codepipeline_role" {
+    arn                   = "arn:aws:iam::202533520289:role/r2sqs-eb-codepipeline-role"
+    assume_role_policy    = jsonencode(
+        {
+            Statement = [
+                {
+                    Action    = "sts:AssumeRole"
+                    Effect    = "Allow"
+                    Principal = {
+                        Service = "codepipeline.amazonaws.com"
+                    }
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    create_date           = "2026-02-24T08:34:00Z"
+    description           = [90mnull[0m[0m
+    force_detach_policies = false
+    id                    = "r2sqs-eb-codepipeline-role"
+    managed_policy_arns   = []
+    max_session_duration  = 3600
+    name                  = "r2sqs-eb-codepipeline-role"
+    name_prefix           = [90mnull[0m[0m
+    path                  = "/"
+    permissions_boundary  = [90mnull[0m[0m
+    tags_all              = {}
+    unique_id             = "AROAS6J7QIOQUFI2M2WM3"
+}
+
+# module.iam.aws_iam_role.ec2_role:
+resource "aws_iam_role" "ec2_role" {
+    arn                   = "arn:aws:iam::202533520289:role/r2sqs-eb-ec2-role"
+    assume_role_policy    = jsonencode(
+        {
+            Statement = [
+                {
+                    Action    = "sts:AssumeRole"
+                    Effect    = "Allow"
+                    Principal = {
+                        Service = "ec2.amazonaws.com"
+                    }
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    create_date           = "2026-02-24T08:34:00Z"
+    description           = [90mnull[0m[0m
+    force_detach_policies = false
+    id                    = "r2sqs-eb-ec2-role"
+    managed_policy_arns   = []
+    max_session_duration  = 3600
+    name                  = "r2sqs-eb-ec2-role"
+    name_prefix           = [90mnull[0m[0m
+    path                  = "/"
+    permissions_boundary  = [90mnull[0m[0m
+    tags_all              = {}
+    unique_id             = "AROAS6J7QIOQRTT5QZK4R"
+}
+
+# module.iam.aws_iam_role_policy.codepipeline_codebuild_policy:
+resource "aws_iam_role_policy" "codepipeline_codebuild_policy" {
+    id          = "r2sqs-eb-codepipeline-role:r2sqs-eb-codepipeline-codebuild"
+    name        = "r2sqs-eb-codepipeline-codebuild"
+    name_prefix = [90mnull[0m[0m
+    policy      = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "codebuild:StartBuild",
+                        "codebuild:BatchGetBuilds",
+                    ]
+                    Effect   = "Allow"
+                    Resource = "*"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    role        = "r2sqs-eb-codepipeline-role"
+}
+
+# module.iam.aws_iam_role_policy.codepipeline_codedeploy_policy:
+resource "aws_iam_role_policy" "codepipeline_codedeploy_policy" {
+    id          = "r2sqs-eb-codepipeline-role:r2sqs-eb-codepipeline-codedeploy"
+    name        = "r2sqs-eb-codepipeline-codedeploy"
+    name_prefix = [90mnull[0m[0m
+    policy      = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "codedeploy:CreateDeployment",
+                        "codedeploy:GetDeployment",
+                        "codedeploy:GetDeploymentConfig",
+                        "codedeploy:RegisterApplicationRevision",
+                    ]
+                    Effect   = "Allow"
+                    Resource = "*"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    role        = "r2sqs-eb-codepipeline-role"
+}
+
+# module.iam.aws_iam_role_policy.codepipeline_codestar_permission:
+resource "aws_iam_role_policy" "codepipeline_codestar_permission" {
+    id          = "r2sqs-eb-codepipeline-role:r2sqs-eb-codestar-permission"
+    name        = "r2sqs-eb-codestar-permission"
+    name_prefix = [90mnull[0m[0m
+    policy      = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = "codestar-connections:UseConnection"
+                    Effect   = "Allow"
+                    Resource = "*"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    role        = "r2sqs-eb-codepipeline-role"
+}
+
+# module.iam.aws_iam_role_policy.codepipeline_s3_policy:
+resource "aws_iam_role_policy" "codepipeline_s3_policy" {
+    id          = "r2sqs-eb-codepipeline-role:r2sqs-eb-codepipeline-s3"
+    name        = "r2sqs-eb-codepipeline-s3"
+    name_prefix = [90mnull[0m[0m
+    policy      = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "s3:GetObject",
+                        "s3:GetObjectVersion",
+                        "s3:PutObject",
+                        "s3:ListBucket",
+                    ]
+                    Effect   = "Allow"
+                    Resource = [
+                        "arn:aws:s3:::r2sqs-eb-artifacts",
+                        "arn:aws:s3:::r2sqs-eb-artifacts/*",
+                    ]
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    role        = "r2sqs-eb-codepipeline-role"
+}
+
+# module.iam.aws_iam_role_policy.ec2_messaging_policy:
+resource "aws_iam_role_policy" "ec2_messaging_policy" {
+    id          = "r2sqs-eb-ec2-role:r2sqs-eb-ec2-messaging"
+    name        = "r2sqs-eb-ec2-messaging"
+    name_prefix = [90mnull[0m[0m
+    policy      = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "sqs:SendMessage",
+                        "sqs:ReceiveMessage",
+                        "sqs:DeleteMessage",
+                        "sqs:GetQueueAttributes",
+                        "events:PutEvents",
+                    ]
+                    Effect   = "Allow"
+                    Resource = "*"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    role        = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.codebuild_ecr:
+resource "aws_iam_role_policy_attachment" "codebuild_ecr" {
+    id         = "r2sqs-eb-codebuild-role-2026022408340216310000000b"
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+    role       = "r2sqs-eb-codebuild-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.codebuild_logs:
+resource "aws_iam_role_policy_attachment" "codebuild_logs" {
+    id         = "r2sqs-eb-codebuild-role-2026022408340210410000000a"
+    policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+    role       = "r2sqs-eb-codebuild-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.codebuild_s3:
+resource "aws_iam_role_policy_attachment" "codebuild_s3" {
+    id         = "r2sqs-eb-codebuild-role-2026022408340217040000000c"
+    policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+    role       = "r2sqs-eb-codebuild-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.codedeploy_policy:
+resource "aws_iam_role_policy_attachment" "codedeploy_policy" {
+    id         = "r2sqs-eb-codedeploy-role-2026022408340240200000000d"
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
+    role       = "r2sqs-eb-codedeploy-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_cloudwatch:
+resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
+    id         = "r2sqs-eb-ec2-role-20260224083403025200000013"
+    policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+    role       = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_codedeploy:
+resource "aws_iam_role_policy_attachment" "ec2_codedeploy" {
+    id         = "r2sqs-eb-ec2-role-20260224083402722600000010"
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeployLimited"
+    role       = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_ecr:
+resource "aws_iam_role_policy_attachment" "ec2_ecr" {
+    id         = "r2sqs-eb-ec2-role-2026022408340266210000000f"
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+    role       = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_elasticache_attach:
+resource "aws_iam_role_policy_attachment" "ec2_elasticache_attach" {
+    id         = "r2sqs-eb-ec2-role-2026022408340265930000000e"
+    policy_arn = "arn:aws:iam::202533520289:policy/r2sqs-eb-elasticache-minimal"
+    role       = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_s3_artifacts_attach:
+resource "aws_iam_role_policy_attachment" "ec2_s3_artifacts_attach" {
+    id         = "r2sqs-eb-ec2-role-20260224083403208500000014"
+    policy_arn = "arn:aws:iam::202533520289:policy/r2sqs-eb-ec2-s3-artifacts"
+    role       = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_secrets:
+resource "aws_iam_role_policy_attachment" "ec2_secrets" {
+    id         = "r2sqs-eb-ec2-role-20260224083402769800000011"
+    policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+    role       = "r2sqs-eb-ec2-role"
+}
+
+# module.iam.aws_iam_role_policy_attachment.ec2_ssm:
+resource "aws_iam_role_policy_attachment" "ec2_ssm" {
+    id         = "r2sqs-eb-ec2-role-20260224083402963800000012"
+    policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    role       = "r2sqs-eb-ec2-role"
+}
+# module.messaging.aws_cloudwatch_event_bus.microservices_bus:
+resource "aws_cloudwatch_event_bus" "microservices_bus" {
+    arn                = "arn:aws:events:ap-south-1:202533520289:event-bus/r2sqs-eb-bus"
+    description        = [90mnull[0m[0m
+    id                 = "r2sqs-eb-bus"
+    kms_key_identifier = [90mnull[0m[0m
+    name               = "r2sqs-eb-bus"
+    tags_all           = {}
+}
+
+# module.messaging.aws_cloudwatch_event_rule.customer_created_rule:
+resource "aws_cloudwatch_event_rule" "customer_created_rule" {
+    arn                 = "arn:aws:events:ap-south-1:202533520289:rule/r2sqs-eb-bus/r2sqs-eb-customer-created-rule"
+    description         = [90mnull[0m[0m
+    event_bus_name      = "r2sqs-eb-bus"
+    event_pattern       = jsonencode(
+        {
+            detail-type = [
+                "CustomerCreated",
+            ]
+            source      = [
+                "customer.service",
+            ]
+        }
+    )
+    force_destroy       = false
+    id                  = "r2sqs-eb-bus/r2sqs-eb-customer-created-rule"
+    is_enabled          = true
+    name                = "r2sqs-eb-customer-created-rule"
+    name_prefix         = [90mnull[0m[0m
+    role_arn            = [90mnull[0m[0m
+    schedule_expression = [90mnull[0m[0m
+    state               = "ENABLED"
+    tags_all            = {}
+}
+
+# module.messaging.aws_cloudwatch_event_target.sqs_target:
+resource "aws_cloudwatch_event_target" "sqs_target" {
+    arn            = "arn:aws:sqs:ap-south-1:202533520289:r2sqs-eb-customer-created-queue"
+    event_bus_name = "r2sqs-eb-bus"
+    force_destroy  = false
+    id             = "r2sqs-eb-bus-r2sqs-eb-customer-created-rule-terraform-20260224083450975500000016"
+    input          = [90mnull[0m[0m
+    input_path     = [90mnull[0m[0m
+    role_arn       = [90mnull[0m[0m
+    rule           = "r2sqs-eb-customer-created-rule"
+    target_id      = "terraform-20260224083450975500000016"
+}
+
+# module.messaging.aws_sqs_queue.customer_created:
+resource "aws_sqs_queue" "customer_created" {
+    arn                               = "arn:aws:sqs:ap-south-1:202533520289:r2sqs-eb-customer-created-queue"
+    content_based_deduplication       = false
+    deduplication_scope               = [90mnull[0m[0m
+    delay_seconds                     = 0
+    fifo_queue                        = false
+    fifo_throughput_limit             = [90mnull[0m[0m
+    id                                = "https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-customer-created-queue"
+    kms_data_key_reuse_period_seconds = 300
+    kms_master_key_id                 = [90mnull[0m[0m
+    max_message_size                  = 262144
+    message_retention_seconds         = 86400
+    name                              = "r2sqs-eb-customer-created-queue"
+    name_prefix                       = [90mnull[0m[0m
+    policy                            = [90mnull[0m[0m
+    receive_wait_time_seconds         = 0
+    redrive_allow_policy              = [90mnull[0m[0m
+    redrive_policy                    = jsonencode(
+        {
+            deadLetterTargetArn = "arn:aws:sqs:ap-south-1:202533520289:r2sqs-eb-customer-created-dlq"
+            maxReceiveCount     = 5
+        }
+    )
+    sqs_managed_sse_enabled           = true
+    tags_all                          = {}
+    url                               = "https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-customer-created-queue"
+    visibility_timeout_seconds        = 30
+}
+
+# module.messaging.aws_sqs_queue.customer_created_dlq:
+resource "aws_sqs_queue" "customer_created_dlq" {
+    arn                               = "arn:aws:sqs:ap-south-1:202533520289:r2sqs-eb-customer-created-dlq"
+    content_based_deduplication       = false
+    deduplication_scope               = [90mnull[0m[0m
+    delay_seconds                     = 0
+    fifo_queue                        = false
+    fifo_throughput_limit             = [90mnull[0m[0m
+    id                                = "https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-customer-created-dlq"
+    kms_data_key_reuse_period_seconds = 300
+    kms_master_key_id                 = [90mnull[0m[0m
+    max_message_size                  = 262144
+    message_retention_seconds         = 345600
+    name                              = "r2sqs-eb-customer-created-dlq"
+    name_prefix                       = [90mnull[0m[0m
+    policy                            = [90mnull[0m[0m
+    receive_wait_time_seconds         = 0
+    redrive_allow_policy              = [90mnull[0m[0m
+    redrive_policy                    = [90mnull[0m[0m
+    sqs_managed_sse_enabled           = true
+    tags_all                          = {}
+    url                               = "https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-customer-created-dlq"
+    visibility_timeout_seconds        = 30
+}
+
+# module.messaging.aws_sqs_queue_policy.allow_eventbridge:
+resource "aws_sqs_queue_policy" "allow_eventbridge" {
+    id        = "https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-customer-created-queue"
+    policy    = jsonencode(
+        {
+            Statement = [
+                {
+                    Action    = "sqs:SendMessage"
+                    Effect    = "Allow"
+                    Principal = {
+                        Service = "events.amazonaws.com"
+                    }
+                    Resource  = "arn:aws:sqs:ap-south-1:202533520289:r2sqs-eb-customer-created-queue"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    queue_url = "https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-customer-created-queue"
+}
+# module.network.data.aws_availability_zones.available:
+data "aws_availability_zones" "available" {
+    group_names = [
+        "ap-south-1-zg-1",
+    ]
+    id          = "ap-south-1"
+    names       = [
+        "ap-south-1a",
+        "ap-south-1b",
+        "ap-south-1c",
+    ]
+    state       = "available"
+    zone_ids    = [
+        "aps1-az1",
+        "aps1-az3",
+        "aps1-az2",
+    ]
+}
+
+# module.network.aws_cloudwatch_log_group.app_logs:
+resource "aws_cloudwatch_log_group" "app_logs" {
+    arn               = "arn:aws:logs:ap-south-1:202533520289:log-group:/r2sqs-eb/ec2"
+    id                = "/r2sqs-eb/ec2"
+    kms_key_id        = [90mnull[0m[0m
+    log_group_class   = "STANDARD"
+    name              = "/r2sqs-eb/ec2"
+    name_prefix       = [90mnull[0m[0m
+    retention_in_days = 14
+    skip_destroy      = false
+    tags_all          = {}
+}
+
+# module.network.aws_elasticache_cluster.redis:
+resource "aws_elasticache_cluster" "redis" {
+    arn                        = "arn:aws:elasticache:ap-south-1:202533520289:cluster:r2sqs-eb-redis"
+    auto_minor_version_upgrade = "true"
+    availability_zone          = "ap-south-1a"
+    az_mode                    = "single-az"
+    cache_nodes                = [
+        {
+            address           = "r2sqs-eb-redis.d8vhgh.0001.aps1.cache.amazonaws.com"
+            availability_zone = "ap-south-1a"
+            id                = "0001"
+            outpost_arn       = [90mnull[0m[0m
+            port              = 6379
+        },
+    ]
+    cluster_id                 = "r2sqs-eb-redis"
+    engine                     = "redis"
+    engine_version             = "7.0"
+    engine_version_actual      = "7.0.7"
+    id                         = "r2sqs-eb-redis"
+    ip_discovery               = "ipv4"
+    maintenance_window         = "tue:19:00-tue:20:00"
+    network_type               = "ipv4"
+    node_type                  = "cache.t3.micro"
+    num_cache_nodes            = 1
+    parameter_group_name       = "default.redis7"
+    port                       = 6379
+    preferred_outpost_arn      = [90mnull[0m[0m
+    replication_group_id       = [90mnull[0m[0m
+    security_group_ids         = [
+        "sg-062d3b5a90c5cccd8",
+    ]
+    snapshot_retention_limit   = 0
+    snapshot_window            = "01:30-02:30"
+    subnet_group_name          = "r2sqs-eb-redis-subnet"
+    tags_all                   = {}
+    transit_encryption_enabled = false
+}
+
+# module.network.aws_elasticache_subnet_group.redis_subnet_group:
+resource "aws_elasticache_subnet_group" "redis_subnet_group" {
+    arn         = "arn:aws:elasticache:ap-south-1:202533520289:subnetgroup:r2sqs-eb-redis-subnet"
+    description = "Managed by Terraform"
+    id          = "r2sqs-eb-redis-subnet"
+    name        = "r2sqs-eb-redis-subnet"
+    subnet_ids  = [
+        "subnet-045b9fe2744cffdf9",
+    ]
+    tags_all    = {}
+    vpc_id      = "vpc-0b9ea86af2982cd24"
+}
+
+# module.network.aws_internet_gateway.igw:
+resource "aws_internet_gateway" "igw" {
+    arn      = "arn:aws:ec2:ap-south-1:202533520289:internet-gateway/igw-0d36ec96c7145f14e"
+    id       = "igw-0d36ec96c7145f14e"
+    owner_id = "202533520289"
+    tags     = {
+        "Name" = "r2sqs-eb-igw"
+    }
+    tags_all = {
+        "Name" = "r2sqs-eb-igw"
+    }
+    vpc_id   = "vpc-0b9ea86af2982cd24"
+}
+
+# module.network.aws_route_table.public:
+resource "aws_route_table" "public" {
+    arn              = "arn:aws:ec2:ap-south-1:202533520289:route-table/rtb-0742be2c7d65a7be4"
+    id               = "rtb-0742be2c7d65a7be4"
+    owner_id         = "202533520289"
+    propagating_vgws = []
+    route            = [
+        {
+            carrier_gateway_id         = [90mnull[0m[0m
+            cidr_block                 = "0.0.0.0/0"
+            core_network_arn           = [90mnull[0m[0m
+            destination_prefix_list_id = [90mnull[0m[0m
+            egress_only_gateway_id     = [90mnull[0m[0m
+            gateway_id                 = "igw-0d36ec96c7145f14e"
+            ipv6_cidr_block            = [90mnull[0m[0m
+            local_gateway_id           = [90mnull[0m[0m
+            nat_gateway_id             = [90mnull[0m[0m
+            network_interface_id       = [90mnull[0m[0m
+            transit_gateway_id         = [90mnull[0m[0m
+            vpc_endpoint_id            = [90mnull[0m[0m
+            vpc_peering_connection_id  = [90mnull[0m[0m
+        },
+    ]
+    tags             = {
+        "Name" = "r2sqs-eb-public-rt"
+    }
+    tags_all         = {
+        "Name" = "r2sqs-eb-public-rt"
+    }
+    vpc_id           = "vpc-0b9ea86af2982cd24"
+}
+
+# module.network.aws_route_table_association.public_assoc:
+resource "aws_route_table_association" "public_assoc" {
+    gateway_id     = [90mnull[0m[0m
+    id             = "rtbassoc-0e8e85c229fe64dfd"
+    route_table_id = "rtb-0742be2c7d65a7be4"
+    subnet_id      = "subnet-045b9fe2744cffdf9"
+}
+
+# module.network.aws_security_group.app_sg:
+resource "aws_security_group" "app_sg" {
+    arn                    = "arn:aws:ec2:ap-south-1:202533520289:security-group/sg-0cbfb7b13f41cba45"
+    description            = "Allow gateway and SSH traffic"
+    egress                 = [
+        {
+            cidr_blocks      = [
+                "0.0.0.0/0",
+            ]
+            description      = [90mnull[0m[0m
+            from_port        = 0
+            ipv6_cidr_blocks = []
+            prefix_list_ids  = []
+            protocol         = "-1"
+            security_groups  = []
+            self             = false
+            to_port          = 0
+        },
+    ]
+    id                     = "sg-0cbfb7b13f41cba45"
+    ingress                = [
+        {
+            cidr_blocks      = [
+                "0.0.0.0/0",
+            ]
+            description      = "Gateway"
+            from_port        = 8000
+            ipv6_cidr_blocks = []
+            prefix_list_ids  = []
+            protocol         = "tcp"
+            security_groups  = []
+            self             = false
+            to_port          = 8000
+        },
+        {
+            cidr_blocks      = [
+                "0.0.0.0/0",
+            ]
+            description      = "SSH (temporary)"
+            from_port        = 22
+            ipv6_cidr_blocks = []
+            prefix_list_ids  = []
+            protocol         = "tcp"
+            security_groups  = []
+            self             = false
+            to_port          = 22
+        },
+    ]
+    name                   = "r2sqs-eb-sg"
+    name_prefix            = [90mnull[0m[0m
+    owner_id               = "202533520289"
+    revoke_rules_on_delete = false
+    tags                   = {
+        "Name" = "r2sqs-eb-sg"
+    }
+    tags_all               = {
+        "Name" = "r2sqs-eb-sg"
+    }
+    vpc_id                 = "vpc-0b9ea86af2982cd24"
+}
+
+# module.network.aws_security_group.redis_sg:
+resource "aws_security_group" "redis_sg" {
+    arn                    = "arn:aws:ec2:ap-south-1:202533520289:security-group/sg-062d3b5a90c5cccd8"
+    description            = "Allow Redis access from EC2"
+    egress                 = [
+        {
+            cidr_blocks      = [
+                "0.0.0.0/0",
+            ]
+            description      = [90mnull[0m[0m
+            from_port        = 0
+            ipv6_cidr_blocks = []
+            prefix_list_ids  = []
+            protocol         = "-1"
+            security_groups  = []
+            self             = false
+            to_port          = 0
+        },
+    ]
+    id                     = "sg-062d3b5a90c5cccd8"
+    ingress                = [
+        {
+            cidr_blocks      = []
+            description      = [90mnull[0m[0m
+            from_port        = 6379
+            ipv6_cidr_blocks = []
+            prefix_list_ids  = []
+            protocol         = "tcp"
+            security_groups  = [
+                "sg-0cbfb7b13f41cba45",
+            ]
+            self             = false
+            to_port          = 6379
+        },
+    ]
+    name                   = "r2sqs-eb-redis-sg"
+    name_prefix            = [90mnull[0m[0m
+    owner_id               = "202533520289"
+    revoke_rules_on_delete = false
+    tags_all               = {}
+    vpc_id                 = "vpc-0b9ea86af2982cd24"
+}
+
+# module.network.aws_subnet.public:
+resource "aws_subnet" "public" {
+    arn                                            = "arn:aws:ec2:ap-south-1:202533520289:subnet/subnet-045b9fe2744cffdf9"
+    assign_ipv6_address_on_creation                = false
+    availability_zone                              = "ap-south-1a"
+    availability_zone_id                           = "aps1-az1"
+    cidr_block                                     = "10.0.1.0/24"
+    customer_owned_ipv4_pool                       = [90mnull[0m[0m
+    enable_dns64                                   = false
+    enable_lni_at_device_index                     = 0
+    enable_resource_name_dns_a_record_on_launch    = false
+    enable_resource_name_dns_aaaa_record_on_launch = false
+    id                                             = "subnet-045b9fe2744cffdf9"
+    ipv6_cidr_block                                = [90mnull[0m[0m
+    ipv6_cidr_block_association_id                 = [90mnull[0m[0m
+    ipv6_native                                    = false
+    map_customer_owned_ip_on_launch                = false
+    map_public_ip_on_launch                        = true
+    outpost_arn                                    = [90mnull[0m[0m
+    owner_id                                       = "202533520289"
+    private_dns_hostname_type_on_launch            = "ip-name"
+    tags                                           = {
+        "Name" = "r2sqs-eb-public-subnet"
+    }
+    tags_all                                       = {
+        "Name" = "r2sqs-eb-public-subnet"
+    }
+    vpc_id                                         = "vpc-0b9ea86af2982cd24"
+}
+
+# module.network.aws_vpc.main:
+resource "aws_vpc" "main" {
+    arn                                  = "arn:aws:ec2:ap-south-1:202533520289:vpc/vpc-0b9ea86af2982cd24"
+    assign_generated_ipv6_cidr_block     = false
+    cidr_block                           = "10.0.0.0/16"
+    default_network_acl_id               = "acl-0c7b80170484421a5"
+    default_route_table_id               = "rtb-06b8930ab6502235f"
+    default_security_group_id            = "sg-07854e1d4dd90b010"
+    dhcp_options_id                      = "dopt-00d9bb84449e70426"
+    enable_dns_hostnames                 = true
+    enable_dns_support                   = true
+    enable_network_address_usage_metrics = false
+    id                                   = "vpc-0b9ea86af2982cd24"
+    instance_tenancy                     = "default"
+    ipv6_association_id                  = [90mnull[0m[0m
+    ipv6_cidr_block                      = [90mnull[0m[0m
+    ipv6_cidr_block_network_border_group = [90mnull[0m[0m
+    ipv6_ipam_pool_id                    = [90mnull[0m[0m
+    ipv6_netmask_length                  = 0
+    main_route_table_id                  = "rtb-06b8930ab6502235f"
+    owner_id                             = "202533520289"
+    tags                                 = {
+        "Name" = "r2sqs-eb-vpc"
+    }
+    tags_all                             = {
+        "Name" = "r2sqs-eb-vpc"
+    }
+}
+# module.secrets.aws_secretsmanager_secret.jwt_secret:
+resource "aws_secretsmanager_secret" "jwt_secret" {
+    arn                            = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-jwt-secret_v2-OkovWi"
+    description                    = [90mnull[0m[0m
+    force_overwrite_replica_secret = false
+    id                             = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-jwt-secret_v2-OkovWi"
+    kms_key_id                     = [90mnull[0m[0m
+    name                           = "r2sqs-eb-jwt-secret_v2"
+    name_prefix                    = [90mnull[0m[0m
+    policy                         = [90mnull[0m[0m
+    recovery_window_in_days        = 0
+    tags_all                       = {}
+}
+
+# module.secrets.aws_secretsmanager_secret.mongo_secret:
+resource "aws_secretsmanager_secret" "mongo_secret" {
+    arn                            = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-mongo-credentials_v2-fmBPij"
+    description                    = [90mnull[0m[0m
+    force_overwrite_replica_secret = false
+    id                             = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-mongo-credentials_v2-fmBPij"
+    kms_key_id                     = [90mnull[0m[0m
+    name                           = "r2sqs-eb-mongo-credentials_v2"
+    name_prefix                    = [90mnull[0m[0m
+    policy                         = [90mnull[0m[0m
+    recovery_window_in_days        = 0
+    tags_all                       = {}
+}
+
+# module.secrets.aws_secretsmanager_secret.ngrok_secret:
+resource "aws_secretsmanager_secret" "ngrok_secret" {
+    arn                            = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-ngrok-token-SoHmck"
+    description                    = [90mnull[0m[0m
+    force_overwrite_replica_secret = false
+    id                             = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-ngrok-token-SoHmck"
+    kms_key_id                     = [90mnull[0m[0m
+    name                           = "r2sqs-eb-ngrok-token"
+    name_prefix                    = [90mnull[0m[0m
+    policy                         = [90mnull[0m[0m
+    recovery_window_in_days        = 0
+    tags_all                       = {}
+}
+
+# module.secrets.aws_secretsmanager_secret.rabbit_secret:
+resource "aws_secretsmanager_secret" "rabbit_secret" {
+    arn                            = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-rabbitmq-credentials_v2-GoL8Fl"
+    description                    = [90mnull[0m[0m
+    force_overwrite_replica_secret = false
+    id                             = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-rabbitmq-credentials_v2-GoL8Fl"
+    kms_key_id                     = [90mnull[0m[0m
+    name                           = "r2sqs-eb-rabbitmq-credentials_v2"
+    name_prefix                    = [90mnull[0m[0m
+    policy                         = [90mnull[0m[0m
+    recovery_window_in_days        = 0
+    tags_all                       = {}
+}
+
+# module.secrets.aws_secretsmanager_secret.redis_secret:
+resource "aws_secretsmanager_secret" "redis_secret" {
+    arn                            = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-redis_v2-bkiY2i"
+    description                    = [90mnull[0m[0m
+    force_overwrite_replica_secret = false
+    id                             = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-redis_v2-bkiY2i"
+    kms_key_id                     = [90mnull[0m[0m
+    name                           = "r2sqs-eb-redis_v2"
+    name_prefix                    = [90mnull[0m[0m
+    policy                         = [90mnull[0m[0m
+    recovery_window_in_days        = 0
+    tags_all                       = {}
+}
+
+# module.secrets.aws_secretsmanager_secret_version.jwt_secret_value:
+resource "aws_secretsmanager_secret_version" "jwt_secret_value" {
+    arn              = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-jwt-secret_v2-OkovWi"
+    id               = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-jwt-secret_v2-OkovWi|terraform-20260224083400846000000007"
+    secret_binary    = (sensitive value)
+    secret_id        = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-jwt-secret_v2-OkovWi"
+    secret_string    = (sensitive value)
+    secret_string_wo = (write-only attribute)
+    version_id       = "terraform-20260224083400846000000007"
+    version_stages   = [
+        "AWSCURRENT",
+    ]
+}
+
+# module.secrets.aws_secretsmanager_secret_version.mongo_secret_value:
+resource "aws_secretsmanager_secret_version" "mongo_secret_value" {
+    arn              = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-mongo-credentials_v2-fmBPij"
+    id               = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-mongo-credentials_v2-fmBPij|terraform-20260224083401019400000009"
+    secret_binary    = (sensitive value)
+    secret_id        = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-mongo-credentials_v2-fmBPij"
+    secret_string    = (sensitive value)
+    secret_string_wo = (write-only attribute)
+    version_id       = "terraform-20260224083401019400000009"
+    version_stages   = [
+        "AWSCURRENT",
+    ]
+}
+
+# module.secrets.aws_secretsmanager_secret_version.ngrok_secret_value:
+resource "aws_secretsmanager_secret_version" "ngrok_secret_value" {
+    arn              = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-ngrok-token-SoHmck"
+    id               = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-ngrok-token-SoHmck|terraform-20260224083401010200000008"
+    secret_binary    = (sensitive value)
+    secret_id        = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-ngrok-token-SoHmck"
+    secret_string    = (sensitive value)
+    secret_string_wo = (write-only attribute)
+    version_id       = "terraform-20260224083401010200000008"
+    version_stages   = [
+        "AWSCURRENT",
+    ]
+}
+
+# module.secrets.aws_secretsmanager_secret_version.rabbit_secret_value:
+resource "aws_secretsmanager_secret_version" "rabbit_secret_value" {
+    arn              = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-rabbitmq-credentials_v2-GoL8Fl"
+    id               = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-rabbitmq-credentials_v2-GoL8Fl|terraform-20260224083400842900000006"
+    secret_binary    = (sensitive value)
+    secret_id        = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-rabbitmq-credentials_v2-GoL8Fl"
+    secret_string    = (sensitive value)
+    secret_string_wo = (write-only attribute)
+    version_id       = "terraform-20260224083400842900000006"
+    version_stages   = [
+        "AWSCURRENT",
+    ]
+}
+
+# module.secrets.aws_secretsmanager_secret_version.redis_secret_value:
+resource "aws_secretsmanager_secret_version" "redis_secret_value" {
+    arn              = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-redis_v2-bkiY2i"
+    id               = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-redis_v2-bkiY2i|terraform-20260224083918669100000017"
+    secret_binary    = (sensitive value)
+    secret_id        = "arn:aws:secretsmanager:ap-south-1:202533520289:secret:r2sqs-eb-redis_v2-bkiY2i"
+    secret_string    = (sensitive value)
+    secret_string_wo = (write-only attribute)
+    version_id       = "terraform-20260224083918669100000017"
+    version_stages   = [
+        "AWSCURRENT",
+    ]
+}
+
+# module.secrets.random_password.jwt_secret:
+resource "random_password" "jwt_secret" {
+    bcrypt_hash = (sensitive value)
+    id          = "none"
+    length      = 32
+    lower       = true
+    min_lower   = 0
+    min_numeric = 0
+    min_special = 0
+    min_upper   = 0
+    number      = true
+    numeric     = true
+    result      = (sensitive value)
+    special     = false
+    upper       = true
+}
+
+# module.secrets.random_password.mongo_password:
+resource "random_password" "mongo_password" {
+    bcrypt_hash = (sensitive value)
+    id          = "none"
+    length      = 20
+    lower       = true
+    min_lower   = 0
+    min_numeric = 0
+    min_special = 0
+    min_upper   = 0
+    number      = true
+    numeric     = true
+    result      = (sensitive value)
+    special     = false
+    upper       = true
+}
+
+# module.secrets.random_password.rabbit_password:
+resource "random_password" "rabbit_password" {
+    bcrypt_hash = (sensitive value)
+    id          = "none"
+    length      = 20
+    lower       = true
+    min_lower   = 0
+    min_numeric = 0
+    min_special = 0
+    min_upper   = 0
+    number      = true
+    numeric     = true
+    result      = (sensitive value)
+    special     = false
+    upper       = true
+}
+
+
+Outputs:
+
+instance_name = "r2sqs-eb-ec2"
+public_ip = "43.205.203.71"
+redis_endpoint = "r2sqs-eb-redis.d8vhgh.0001.aps1.cache.amazonaws.com"

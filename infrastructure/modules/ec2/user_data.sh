@@ -115,7 +115,7 @@ chmod +x /usr/local/bin/ngrok
 # Fetch ngrok token
 ########################################
 NGROK_TOKEN=$(aws secretsmanager get-secret-value \
-  --secret-id node-microservices-ngrok-token \
+  --secret-id r2sqs-eb-ngrok-token \
   --region "$AWS_REGION" \
   --query SecretString \
   --output text)

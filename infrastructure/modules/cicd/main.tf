@@ -139,7 +139,7 @@ resource "aws_codepipeline" "microservices_pipeline" {
 
       configuration = {
         ConnectionArn    = aws_codestarconnections_connection.github.arn
-        FullRepositoryId = "chinnmayK/nodejs-microservices"
+        FullRepositoryId = "chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge"
         BranchName       = "main"
         DetectChanges    = "true"
       }

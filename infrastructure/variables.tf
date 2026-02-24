@@ -1,14 +1,14 @@
 variable "project_name" {
+  description = "Name of the project"
   type        = string
-  description = "Project name prefix"
 }
 
 variable "aws_region" {
+  description = "AWS region to deploy into"
   type        = string
-  description = "AWS region"
 }
 
 variable "github_repo" {
+  description = "GitHub repo owner/name"
   type        = string
-  description = "GitHub repo in format username/repo"
 }
