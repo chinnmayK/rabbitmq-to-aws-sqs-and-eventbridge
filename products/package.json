@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-eventbridge": "^3.996.0",
     "@aws-sdk/client-sqs": "^3.996.0",
     "amqplib": "^0.8.0",
     "axios": "^0.21.1",
