@@ -2,10 +2,10 @@ terraform {
   required_version = ">= 1.14.0"
 
   backend "s3" {
-    bucket         = "node-microservices-terraform-state-ba891c07"
+    bucket         = "r2sqs-eb-terraform-state-fa6eccf9"
     key            = "infrastructure/terraform.tfstate"
     region         = "ap-south-1"
-    dynamodb_table = "node-microservices-terraform-lock"
+    dynamodb_table = "r2sqs-eb-terraform-lock"
     encrypt        = true
   }
 

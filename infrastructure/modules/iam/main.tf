@@ -17,6 +17,26 @@ resource "aws_iam_role" "ec2_role" {
   })
 }
 
+resource "aws_iam_role_policy" "ec2_messaging_policy" {
+  name = "${var.project_name}-ec2-messaging"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "sqs:SendMessage",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "events:PutEvents"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
 ########################################################
 # INSTANCE PROFILE FOR EC2 ROLE
 ########################################################

@@ -7,5 +7,5 @@ variable "aws_region" {
 variable "project_name" {
   type        = string
   description = "Project name prefix"
-  default     = "node-microservices"
+  default     = "r2sqs-eb"
 }
