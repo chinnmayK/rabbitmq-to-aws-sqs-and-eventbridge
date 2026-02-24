@@ -49,6 +49,8 @@ services:
       - rabbitmq
     environment:
       PORT: 8001
+      AWS_REGION: ${AWS_REGION}
+      EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
       EXCHANGE_NAME: ONLINE_STORE
       CUSTOMER_SERVICE: CUSTOMER_SERVICE
@@ -69,6 +71,8 @@ services:
       - redis
     environment:
       PORT: 8002
+      AWS_REGION: ${AWS_REGION}
+      EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
       EXCHANGE_NAME: ONLINE_STORE
       SHOPPING_SERVICE: SHOPPING_SERVICE
@@ -89,6 +93,8 @@ services:
       - rabbitmq
     environment:
       PORT: 8003
+      AWS_REGION: ${AWS_REGION}
+      EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
       EXCHANGE_NAME: ONLINE_STORE
       SHOPPING_SERVICE: SHOPPING_SERVICE

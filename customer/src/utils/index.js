@@ -10,7 +10,14 @@ const {
   MSG_QUEUE_URL,
 } = require("../config");
 
-// Create EventBridge Client
+// ------------------
+// EventBridge Setup
+// ------------------
+
+if (!process.env.EVENT_BUS_NAME) {
+  console.warn("⚠️ EVENT_BUS_NAME is not defined in environment variables");
+}
+
 const eventBridge = new EventBridgeClient({
   region: process.env.AWS_REGION || "ap-south-1",
 });
@@ -80,10 +87,15 @@ module.exports.CreateChannel = async () => {
 };
 
 module.exports.PublishMessage = async (channel, service, msg) => {
-  // 1️⃣ Publish to RabbitMQ (existing)
+  // 1️⃣ Publish to RabbitMQ
   channel.publish(EXCHANGE_NAME, service, Buffer.from(msg));
 
-  // 2️⃣ Publish to EventBridge (new)
+  // 2️⃣ Publish to EventBridge
+  if (!process.env.EVENT_BUS_NAME) {
+    console.error("❌ Cannot publish to EventBridge: EVENT_BUS_NAME not set");
+    return;
+  }
+
   try {
     await eventBridge.send(
       new PutEventsCommand({
