@@ -23,7 +23,7 @@ if [ -z "$AWS_REGION" ]; then
 fi
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-
+PROJECT_NAME="r2sqs-eb"
 ECR_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
@@ -47,19 +47,19 @@ cd "$APP_DIR"
 # Fetch Secrets
 ########################################
 MONGO_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id node-microservices-mongo-credentials_v2 \
+  --secret-id r2sqs-eb-mongo-credentials_v2 \
   --region "$AWS_REGION" \
   --query SecretString \
   --output text)
 
 RABBIT_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id node-microservices-rabbitmq-credentials_v2 \
+  --secret-id r2sqs-eb-rabbitmq-credentials_v2 \
   --region "$AWS_REGION" \
   --query SecretString \
   --output text)
 
 JWT_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id node-microservices-jwt-secret_v2 \
+  --secret-id r2sqs-eb-jwt-secret_v2 \
   --region "$AWS_REGION" \
   --query SecretString \
   --output text)
@@ -69,6 +69,7 @@ MONGO_PASSWORD=$(echo "$MONGO_SECRET" | jq -r '.password')
 RABBITMQ_USERNAME=$(echo "$RABBIT_SECRET" | jq -r '.username')
 RABBITMQ_PASSWORD=$(echo "$RABBIT_SECRET" | jq -r '.password')
 APP_SECRET=$(echo "$JWT_SECRET" | jq -r '.jwt')
+EVENT_BUS_NAME="${PROJECT_NAME}-bus"
 
 cat > .env <<EOF
 ACCOUNT_ID=$ACCOUNT_ID
@@ -78,6 +79,7 @@ MONGO_PASSWORD=$MONGO_PASSWORD
 RABBITMQ_USERNAME=$RABBITMQ_USERNAME
 RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD
 APP_SECRET=$APP_SECRET
+EVENT_BUS_NAME=$EVENT_BUS_NAME
 EOF
 
 ########################################
@@ -91,10 +93,10 @@ fi
 
 $DOCKER_CMD down || true
 
-docker pull "$ECR_URL/node-microservices-customer:$IMAGE_TAG"
-docker pull "$ECR_URL/node-microservices-products:$IMAGE_TAG"
-docker pull "$ECR_URL/node-microservices-shopping:$IMAGE_TAG"
-docker pull "$ECR_URL/node-microservices-gateway:$IMAGE_TAG"
+docker pull "$ECR_URL/r2sqs-eb-customer:$IMAGE_TAG"
+docker pull "$ECR_URL/r2sqs-eb-products:$IMAGE_TAG"
+docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG"
+docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG"
 
 $DOCKER_CMD up -d
 
