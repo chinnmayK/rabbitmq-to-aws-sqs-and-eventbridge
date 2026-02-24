@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     IMAGE_TAG: latest
-    PROJECT_NAME: node-microservices
+    PROJECT_NAME: r2sqs-eb
 
 phases:
   pre_build:

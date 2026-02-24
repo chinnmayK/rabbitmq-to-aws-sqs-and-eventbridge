@@ -39,7 +39,7 @@ services:
       - app-network
 
   customer:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-customer:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-customer:latest
     container_name: customer
     restart: unless-stopped
     ports:
@@ -58,7 +58,7 @@ services:
       - app-network
 
   products:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-products:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-products:latest
     container_name: products
     restart: unless-stopped
     ports:
@@ -79,7 +79,7 @@ services:
       - app-network
 
   shopping:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-shopping:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-shopping:latest
     container_name: shopping
     restart: unless-stopped
     ports:
@@ -98,7 +98,7 @@ services:
       - app-network
 
   gateway:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/node-microservices-gateway:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-gateway:latest
     container_name: gateway
     restart: unless-stopped
     ports:
