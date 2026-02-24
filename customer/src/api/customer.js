@@ -5,7 +5,7 @@ const { SubscribeMessage } = require('../utils');
 
 module.exports = (app, channel) => {
     
-    const service = new CustomerService();
+    const service = new CustomerService(channel);
 
     // To listen
     SubscribeMessage(channel, service);

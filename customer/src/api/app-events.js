@@ -1,8 +1,8 @@
 const CustomerService = require("../services/customer-service");
 
-module.exports = (app) => {
+module.exports = (app, channel) => {
     
-    const service = new CustomerService();
+    const service = new CustomerService(channel);
     app.use('/app-events',async (req,res,next) => {
 
         const { payload } = req.body;

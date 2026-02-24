@@ -5,11 +5,13 @@ const {
   GenerateSalt,
   GenerateSignature,
   ValidatePassword,
+  PublishMessage,
 } = require("../utils");
 
 class CustomerService {
-  constructor() {
+  constructor(channel) {
     this.repository = new CustomerRepository();
+    this.channel = channel; // 👈 important
   }
 
   // ================= SIGN UP =================
@@ -34,6 +36,24 @@ class CustomerService {
       email: customer.email,
       _id: customer._id,
     });
+
+    // 🔥 PUBLISH EVENT (RabbitMQ + EventBridge)
+    const payload = {
+      event: "CustomerCreated",
+      data: {
+        userId: customer._id,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    };
+
+    await PublishMessage(
+      this.channel,
+      "CustomerCreated",
+      JSON.stringify(payload)
+    );
+
+    console.log("📢 CustomerCreated event published");
 
     return FormateData({
       id: customer._id,
