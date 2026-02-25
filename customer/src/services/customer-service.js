@@ -156,6 +156,16 @@ class CustomerService {
 
   // ================= ORDER =================
   async ManageOrder(customerId, order) {
+    const profile = await this.repository.FindCustomerById({ id: customerId });
+    if (!profile) throw new Error("Customer not found");
+
+    // Idempotency check: Don't process the same order twice
+    const existingOrder = profile.orders && profile.orders.find(o => o._id === order._id);
+    if (existingOrder) {
+      console.log(`⚠️ Order ${order._id} already exists for customer ${customerId}. Skipping.`);
+      return FormateData(profile);
+    }
+
     const result = await this.repository.AddOrderToProfile(
       customerId,
       order

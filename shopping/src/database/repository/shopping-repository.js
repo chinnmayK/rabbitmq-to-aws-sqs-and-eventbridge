@@ -108,6 +108,11 @@ class ShoppingRepository {
     }
 
     async CreateCart(customerId) {
+        const existingCart = await CartModel.findOne({ customerId });
+        if (existingCart) {
+            return existingCart;
+        }
+
         return await CartModel.create({
             customerId,
             items: []

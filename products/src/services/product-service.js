@@ -98,7 +98,19 @@ class ProductService {
 
     switch (event) {
       case "OrderCreated":
+        // Idempotency: Ignore duplicate OrderCreated events
+        const isProcessed = await redisClient.get(`processed_order:${data.order._id}`);
+        if (isProcessed) {
+          console.log(`⚠️ Order ${data.order._id} already processed by Products Service. Skipping.`);
+          break;
+        }
+
         await this.ReduceInventory(data);
+
+        // Mark as processed (store for 30 days)
+        await redisClient.set(`processed_order:${data.order._id}`, "true", {
+          EX: 30 * 24 * 60 * 60
+        });
         break;
       default:
         break;

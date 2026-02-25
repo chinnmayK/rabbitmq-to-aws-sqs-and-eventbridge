@@ -79,8 +79,12 @@ class ShoppingService {
 
   async SubscribeCustomerCreated(data) {
     const { userId } = data;
-    await this.repository.CreateCart(userId);
-    console.log("🛒 Cart initialized for new user:", userId);
+    const cart = await this.repository.CreateCart(userId);
+    if (cart.isNew || cart.items.length === 0) {
+      console.log("🛒 Cart initialized/verified for user:", userId);
+    } else {
+      console.log("⚠️ Cart already exists for user:", userId);
+    }
   }
 
   // ================= CREATE ORDER EVENT PAYLOAD =================

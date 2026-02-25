@@ -17,7 +17,7 @@ resource "aws_sqs_queue" "customer_created" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.customer_created_dlq.arn
-    maxReceiveCount     = 5
+    maxReceiveCount     = 3
   })
 }
 
@@ -73,4 +73,40 @@ resource "aws_sqs_queue_policy" "allow_eventbridge" {
       }
     ]
   })
+}
+
+########################################################
+# CLOUDWATCH ALARMS
+########################################################
+
+resource "aws_cloudwatch_metric_alarm" "dlq_alarm" {
+  alarm_name          = "${var.project_name}-dlq-alarm"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = "60"
+  statistic           = "Sum"
+  threshold           = "0"
+  alarm_description   = "This alarm monitors if there are any messages in the DLQ"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.customer_created_dlq.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "queue_backlog_alarm" {
+  alarm_name          = "${var.project_name}-queue-backlog-alarm"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = "60"
+  statistic           = "Average"
+  threshold           = "50"
+  alarm_description   = "This alarm monitors if the main queue backlog exceeds 50 messages"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.customer_created.name
+  }
 }
