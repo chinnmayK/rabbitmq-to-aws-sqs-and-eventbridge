@@ -16,19 +16,6 @@ services:
     networks:
       - app-network
 
-  rabbitmq:
-    image: public.ecr.aws/docker/library/rabbitmq:3-management
-    container_name: rabbitmq
-    restart: unless-stopped
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    networks:
-      - app-network
-
   redis:
     image: redis:7
     container_name: redis
@@ -46,16 +33,13 @@ services:
       - "8001:8001"
     depends_on:
       - mongodb
-      - rabbitmq
     environment:
       PORT: 8001
       AWS_REGION: ${AWS_REGION}
       EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
-      EXCHANGE_NAME: ONLINE_STORE
       CUSTOMER_SERVICE: CUSTOMER_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/customer?authSource=admin
-      MSG_QUEUE_URL: amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     networks:
       - app-network
 
@@ -67,17 +51,15 @@ services:
       - "8002:8002"
     depends_on:
       - mongodb
-      - rabbitmq
       - redis
     environment:
       PORT: 8002
       AWS_REGION: ${AWS_REGION}
       EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
-      EXCHANGE_NAME: ONLINE_STORE
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/products?authSource=admin
-      MSG_QUEUE_URL: amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      SQS_QUEUE_URL: ${SQS_QUEUE_URL}
       REDIS_URL: redis://redis:6379
     networks:
       - app-network
@@ -90,16 +72,13 @@ services:
       - "8003:8003"
     depends_on:
       - mongodb
-      - rabbitmq
     environment:
       PORT: 8003
       AWS_REGION: ${AWS_REGION}
       EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
-      EXCHANGE_NAME: ONLINE_STORE
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/shopping?authSource=admin
-      MSG_QUEUE_URL: amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       SQS_QUEUE_URL: ${SQS_QUEUE_URL}
     networks:
       - app-network
