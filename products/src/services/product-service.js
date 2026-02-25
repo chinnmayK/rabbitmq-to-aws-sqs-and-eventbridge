@@ -4,9 +4,8 @@ const { CUSTOMER_SERVICE, SHOPPING_SERVICE } = require("../config");
 const redisClient = require("../utils/redis-client");
 
 class ProductService {
-  constructor(channel) {
+  constructor() {
     this.repository = new ProductRepository();
-    this.channel = channel;
   }
 
   // ================= CREATE PRODUCT =================
@@ -19,7 +18,7 @@ class ProductService {
         event: "ProductCreated",
         data: product
       };
-      await PublishMessage(this.channel, "ProductCreated", payload);
+      await PublishMessage("ProductCreated", payload);
     }
 
     return FormateData(product);
@@ -142,7 +141,7 @@ class ProductService {
     const payload = await this.GetProductPayload(userId, { productId, qty }, event);
 
     // Decoupled Publish: Just send the event
-    await PublishMessage(this.channel, event, payload);
+    await PublishMessage(event, payload);
 
     return payload;
   }

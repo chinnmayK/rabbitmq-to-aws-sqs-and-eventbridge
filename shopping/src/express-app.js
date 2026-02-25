@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { shopping, appEvents } = require('./api');
-module.exports = async (app, channel) => {
+module.exports = async (app) => {
 
     app.use(express.json());
     app.use(cors());
@@ -11,7 +11,7 @@ module.exports = async (app, channel) => {
     //api
     // appEvents(app);
 
-    shopping(app, channel);
+    shopping(app);
     // error handling
 
 }

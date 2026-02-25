@@ -3,9 +3,8 @@ const { FormateData, PublishMessage } = require("../utils");
 const { CUSTOMER_SERVICE } = require("../config");
 
 class ShoppingService {
-  constructor(channel) {
+  constructor() {
     this.repository = new ShoppingRepository();
-    this.channel = channel;
   }
 
   // ================= CART =================
@@ -33,7 +32,7 @@ class ShoppingService {
 
     if (order) {
       const payload = await this.GetOrderPayload(_id, order, "OrderCreated");
-      await PublishMessage(this.channel, "OrderCreated", payload);
+      await PublishMessage("OrderCreated", payload);
       return FormateData(order);
     }
 

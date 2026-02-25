@@ -1,15 +1,10 @@
 const ShoppingService = require("../services/shopping-service");
-const { PublishMessage, SubscribeMessage } = require("../utils");
+const { PublishMessage } = require("../utils");
 const UserAuth = require("./middlewares/auth");
 const { CUSTOMER_SERVICE } = require("../config");
 
-module.exports = async (app, channel) => {
-  const service = new ShoppingService(channel);
-
-  console.log("SubscribeMessage:", SubscribeMessage);
-
-  // ✅ Corrected
-  await SubscribeMessage(channel, service);
+module.exports = async (app) => {
+  const service = new ShoppingService();
 
   // ================= PLACE ORDER =================
   app.post("/order", UserAuth, async (req, res, next) => {

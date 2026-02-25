@@ -4,7 +4,7 @@ const { databaseConnection } = require('./database');
 const expressApp = require('./express-app');
 const ProductService = require('./services/product-service');
 
-const { CreateChannel, SubscribeMessage, StartSQSConsumer } = require('./utils');
+const { StartSQSConsumer } = require('./utils');
 
 const StartServer = async () => {
     try {
@@ -12,15 +12,12 @@ const StartServer = async () => {
 
         await databaseConnection();
 
-        const channel = await CreateChannel();
+        await expressApp(app);
 
-        await expressApp(app, channel);
-
-        // 🟢 Initialize service with channel
-        const service = new ProductService(channel);
+        // 🟢 Initialize service
+        const service = new ProductService();
 
         // 🟢 Start Consumers
-        await SubscribeMessage(channel, service);
         StartSQSConsumer(service);
 
         app.listen(PORT, () => {

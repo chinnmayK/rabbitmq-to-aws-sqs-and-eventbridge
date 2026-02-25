@@ -1,19 +1,13 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
-const amqplib = require("amqplib");
 const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require("@aws-sdk/client-sqs");
 const { EventBridgeClient, PutEventsCommand } = require("@aws-sdk/client-eventbridge");
 
 const {
   APP_SECRET,
-  EXCHANGE_NAME,
-  SHOPPING_SERVICE,
-  MSG_QUEUE_URL,
-  CUSTOMER_SERVICE,
   EVENT_BUS_NAME,
   AWS_REGION,
-  PRODUCTS_SERVICE,
   SQS_QUEUE_URL,
 } = require("../config");
 
@@ -52,40 +46,12 @@ module.exports.FormateData = (data) => {
 // Message Broker
 // ------------------
 
-module.exports.CreateChannel = async () => {
-  let retries = 5;
-
-  while (retries) {
-    try {
-      const connection = await amqplib.connect(MSG_QUEUE_URL);
-      const channel = await connection.createChannel();
-
-      await channel.assertExchange(EXCHANGE_NAME, "direct", {
-        durable: true,
-      });
-
-      console.log("✅ RabbitMQ Connected");
-      return channel;
-    } catch (err) {
-      console.log("❌ RabbitMQ connection failed. Retrying...");
-      retries -= 1;
-      await new Promise((res) => setTimeout(res, 5000));
-    }
-  }
-
-  throw new Error("RabbitMQ connection failed");
-};
-
 // 2️⃣ EventBridge Publication
 const eventBridge = new EventBridgeClient({
   region: AWS_REGION,
 });
 
-module.exports.PublishMessage = async (channel, service, msg) => {
-  // 1️⃣ Publish to RabbitMQ
-  channel.publish(EXCHANGE_NAME, service, Buffer.from(JSON.stringify(msg)));
-
-  // 2️⃣ Publish to EventBridge
+module.exports.PublishMessage = async (service, msg) => {
   if (!EVENT_BUS_NAME) {
     console.warn("⚠️ EVENT_BUS_NAME is not set. Skipping EventBridge publish.");
     return;
@@ -108,31 +74,6 @@ module.exports.PublishMessage = async (channel, service, msg) => {
   } catch (err) {
     console.error("❌ EventBridge publish failed:", err);
   }
-};
-
-module.exports.SubscribeMessage = async (channel, service) => {
-  const appQueue = await channel.assertQueue(PRODUCTS_SERVICE, {
-    durable: true,
-  });
-
-  const events = ["OrderCreated"];
-
-  events.forEach(async (event) => {
-    await channel.bindQueue(appQueue.queue, EXCHANGE_NAME, event);
-  });
-
-  channel.consume(appQueue.queue, async (data) => {
-    if (data !== null) {
-      console.log("📥 Received Event from RabbitMQ");
-
-      const payload = data.content.toString();
-      await service.SubscribeEvents(payload);
-
-      channel.ack(data);
-    }
-  });
-
-  console.log("👂 Subscribed to Products Events (RabbitMQ)");
 };
 
 // ======================================================

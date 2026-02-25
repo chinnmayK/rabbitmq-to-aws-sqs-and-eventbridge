@@ -1,13 +1,10 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const amqplib = require("amqplib");
 const { EventBridgeClient, PutEventsCommand } = require("@aws-sdk/client-eventbridge");
 
 const {
   APP_SECRET,
-  EXCHANGE_NAME,
   CUSTOMER_SERVICE,
-  MSG_QUEUE_URL,
   EVENT_BUS_NAME,
   AWS_REGION,
 } = require("../config");
@@ -60,41 +57,9 @@ module.exports.FormateData = (data) => {
   throw new Error("Data Not found!");
 };
 
-// ------------------
-// Message Broker
-// ------------------
-
-module.exports.CreateChannel = async () => {
-  let retries = 5;
-
-  while (retries) {
-    try {
-      const connection = await amqplib.connect(MSG_QUEUE_URL);
-      const channel = await connection.createChannel();
-
-      await channel.assertExchange(EXCHANGE_NAME, "direct", {
-        durable: true,
-      });
-
-      console.log("✅ RabbitMQ Connected");
-      return channel;
-    } catch (err) {
-      console.log("❌ RabbitMQ connection failed. Retrying...");
-      retries -= 1;
-      await new Promise((res) => setTimeout(res, 5000));
-    }
-  }
-
-  throw new Error("RabbitMQ connection failed");
-};
-
-module.exports.PublishMessage = async (channel, service, msg) => {
+module.exports.PublishMessage = async (eventType, msg) => {
   const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
 
-  // 1️⃣ Publish to RabbitMQ
-  channel.publish(EXCHANGE_NAME, service, Buffer.from(payload));
-
-  // 2️⃣ Publish to EventBridge
   if (!EVENT_BUS_NAME) {
     console.error("❌ Cannot publish to EventBridge: EVENT_BUS_NAME not set");
     return;
@@ -106,7 +71,7 @@ module.exports.PublishMessage = async (channel, service, msg) => {
         Entries: [
           {
             Source: "customer.service",
-            DetailType: service,
+            DetailType: eventType,
             Detail: payload,
             EventBusName: EVENT_BUS_NAME,
           },
@@ -118,24 +83,4 @@ module.exports.PublishMessage = async (channel, service, msg) => {
   } catch (err) {
     console.error("❌ EventBridge publish failed:", err);
   }
-};
-
-module.exports.SubscribeMessage = async (channel, service) => {
-  const q = await channel.assertQueue("", { exclusive: true });
-
-  const events = ["OrderCreated", "ADD_TO_WISHLIST", "REMOVE_FROM_WISHLIST", "ADD_TO_CART", "REMOVE_FROM_CART"];
-
-  events.forEach(async (event) => {
-    await channel.bindQueue(q.queue, EXCHANGE_NAME, event);
-  });
-
-  channel.consume(
-    q.queue,
-    (msg) => {
-      if (msg.content) {
-        service.SubscribeEvents(msg.content.toString());
-      }
-    },
-    { noAck: true }
-  );
 };

@@ -9,9 +9,8 @@ const {
 } = require("../utils");
 
 class CustomerService {
-  constructor(channel) {
+  constructor() {
     this.repository = new CustomerRepository();
-    this.channel = channel;
   }
 
   // ================= SIGN UP =================
@@ -48,7 +47,6 @@ class CustomerService {
     };
 
     await PublishMessage(
-      this.channel,
       "CustomerCreated",
       payload // msg is stringified in PublishMessage now
     );
@@ -124,7 +122,6 @@ class CustomerService {
     };
 
     await PublishMessage(
-      this.channel,
       "CustomerAddressAdded",
       payload
     );
@@ -174,7 +171,6 @@ class CustomerService {
     };
 
     await PublishMessage(
-      this.channel,
       "CustomerOrderLinked",
       payload
     );

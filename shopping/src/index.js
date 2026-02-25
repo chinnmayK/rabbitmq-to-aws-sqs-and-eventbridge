@@ -3,7 +3,7 @@ const { PORT } = require('./config');
 const { databaseConnection } = require('./database');
 const expressApp = require('./express-app');
 
-const { CreateChannel, SubscribeMessage, StartSQSConsumer } = require('./utils');
+const { StartSQSConsumer } = require('./utils');
 const ShoppingService = require('./services/shopping-service');
 
 const StartServer = async () => {
@@ -11,16 +11,10 @@ const StartServer = async () => {
         const app = express();
 
         await databaseConnection();
-        // 🟢 Create RabbitMQ channel
-        const channel = await CreateChannel();
+        await expressApp(app);
 
-        await expressApp(app, channel);
-
-        // 🟢 Initialize service with channel
-        const service = new ShoppingService(channel);
-
-        // 🟢 Start RabbitMQ consumer (existing)
-        await SubscribeMessage(channel, service);
+        // 🟢 Initialize service
+        const service = new ShoppingService();
 
         // 🟢 Start SQS consumer (new)
         StartSQSConsumer(service);
