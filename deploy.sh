@@ -57,11 +57,7 @@ MONGO_SECRET=$(aws secretsmanager get-secret-value \
   --query SecretString \
   --output text)
 
-RABBIT_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id r2sqs-eb-rabbitmq-credentials_v2 \
-  --region "$AWS_REGION" \
-  --query SecretString \
-  --output text)
+
 
 JWT_SECRET=$(aws secretsmanager get-secret-value \
   --secret-id r2sqs-eb-jwt-secret_v2 \
@@ -71,8 +67,7 @@ JWT_SECRET=$(aws secretsmanager get-secret-value \
 
 MONGO_USERNAME=$(echo "$MONGO_SECRET" | jq -r '.username')
 MONGO_PASSWORD=$(echo "$MONGO_SECRET" | jq -r '.password')
-RABBITMQ_USERNAME=$(echo "$RABBIT_SECRET" | jq -r '.username')
-RABBITMQ_PASSWORD=$(echo "$RABBIT_SECRET" | jq -r '.password')
+
 APP_SECRET=$(echo "$JWT_SECRET" | jq -r '.jwt')
 EVENT_BUS_NAME="${PROJECT_NAME}-bus"
 
@@ -84,8 +79,7 @@ ACCOUNT_ID=$ACCOUNT_ID
 AWS_REGION=$AWS_REGION
 MONGO_USERNAME=$MONGO_USERNAME
 MONGO_PASSWORD=$MONGO_PASSWORD
-RABBITMQ_USERNAME=$RABBITMQ_USERNAME
-RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD
+
 APP_SECRET=$APP_SECRET
 EVENT_BUS_NAME=$EVENT_BUS_NAME
 SQS_QUEUE_URL=$SQS_QUEUE_URL

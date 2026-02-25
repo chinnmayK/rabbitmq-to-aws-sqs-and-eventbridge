@@ -3,13 +3,8 @@
 ############################################################
 
 resource "random_password" "mongo_password" {
-  length           = 20
-  special          = false
-}
-
-resource "random_password" "rabbit_password" {
-  length           = 20
-  special          = false
+  length  = 20
+  special = false
 }
 
 resource "random_password" "jwt_secret" {
@@ -32,24 +27,6 @@ resource "aws_secretsmanager_secret_version" "mongo_secret_value" {
   secret_string = jsonencode({
     username = "admin"
     password = random_password.mongo_password.result
-  })
-}
-
-############################################################
-# RabbitMQ Secret
-############################################################
-
-resource "aws_secretsmanager_secret" "rabbit_secret" {
-  name                    = "${var.project_name}-rabbitmq-credentials_v2"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "rabbit_secret_value" {
-  secret_id = aws_secretsmanager_secret.rabbit_secret.id
-
-  secret_string = jsonencode({
-    username = "admin"
-    password = random_password.rabbit_password.result
   })
 }
 
