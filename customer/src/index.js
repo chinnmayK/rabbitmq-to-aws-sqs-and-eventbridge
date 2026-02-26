@@ -2,6 +2,8 @@ const express = require('express');
 const { PORT } = require('./config');
 const { databaseConnection } = require('./database');
 const expressApp = require('./express-app');
+const { StartSQSConsumer } = require('./utils');
+const CustomerService = require('./services/customer-service');
 
 const StartServer = async () => {
     try {
@@ -9,6 +11,9 @@ const StartServer = async () => {
 
         await databaseConnection();
         await expressApp(app);
+
+        const service = new CustomerService();
+        StartSQSConsumer(service);
 
         app.listen(PORT, () => {
             console.log(`Customer service listening on port ${PORT}`);
