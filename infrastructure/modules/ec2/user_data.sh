@@ -174,4 +174,7 @@ sleep 5
 mkdir -p /opt/node-app
 chown -R ubuntu:ubuntu /opt/node-app
 
+echo "CUSTOMER_SERVICE_URL=http://customer:8001/customer" >> /opt/node-app/.env
+echo "SHOPPING_SERVICE_URL=http://shopping:8002/shopping" >> /opt/node-app/.env
+
 echo "===== EC2 Bootstrap Complete ====="

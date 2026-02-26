@@ -66,42 +66,12 @@ class CustomerRepository {
     return result.wishlist;
   }
 
-  async AddCartItem(customerId, product, qty, isRemove) {
-    const profile = await CustomerModel.findById(customerId);
-    if (!profile) throw new Error("Customer not found");
-
-    let cartItems = profile.cart || [];
-
-    const existingItem = cartItems.find(
-      item => item.product._id.toString() === product._id.toString()
-    );
-
-    if (existingItem) {
-      if (isRemove) {
-        cartItems = cartItems.filter(
-          item => item.product._id.toString() !== product._id.toString()
-        );
-      } else {
-        existingItem.unit = qty;
-      }
-    } else if (!isRemove) {
-      cartItems.push({
-        product,
-        unit: qty,
-      });
-    }
-
-    profile.cart = cartItems;
-    return await profile.save();
-  }
-
   async AddOrderToProfile(customerId, order) {
     const profile = await CustomerModel.findById(customerId);
     if (!profile) throw new Error("Customer not found");
 
     profile.orders = profile.orders || [];
     profile.orders.push(order);
-    profile.cart = [];
 
     return await profile.save();
   }

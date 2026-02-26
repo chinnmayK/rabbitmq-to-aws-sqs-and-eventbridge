@@ -9,8 +9,7 @@ class ShoppingService {
 
   // ================= CART =================
   async GetCart({ _id }) {
-    const cartItems = await this.repository.Cart(_id);
-    return FormateData(cartItems);
+    return await this.repository.Cart({ customerId: _id });
   }
 
   async ManageCart(customerId, product, qty, isRemove) {

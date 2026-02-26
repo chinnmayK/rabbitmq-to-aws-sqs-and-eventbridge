@@ -142,18 +142,6 @@ class CustomerService {
     return FormateData(result);
   }
 
-  // ================= CART =================
-  async ManageCart(customerId, product, qty, isRemove) {
-    const result = await this.repository.AddCartItem(
-      customerId,
-      product,
-      qty,
-      isRemove
-    );
-
-    return FormateData(result);
-  }
-
   // ================= ORDER =================
   async ManageOrder(customerId, order) {
     const profile = await this.repository.FindCustomerById({ id: customerId });
@@ -201,14 +189,6 @@ class CustomerService {
       case "ADD_TO_WISHLIST":
       case "REMOVE_FROM_WISHLIST":
         await this.AddToWishlist(userId, product);
-        break;
-
-      case "ADD_TO_CART":
-        await this.ManageCart(userId, product, qty, false);
-        break;
-
-      case "REMOVE_FROM_CART":
-        await this.ManageCart(userId, product, qty, true);
         break;
 
       case "CREATE_ORDER":

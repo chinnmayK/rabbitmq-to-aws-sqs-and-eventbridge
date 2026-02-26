@@ -95,14 +95,15 @@ services:
       - shopping
     environment:
       PORT: 8000
-      CUSTOMER_SERVICE_URL: http://customer:8001
+      CUSTOMER_SERVICE_URL: ${CUSTOMER_SERVICE_URL:-http://customer:8001/customer}
       PRODUCT_SERVICE_URL: http://products:8002
-      SHOPPING_SERVICE_URL: http://shopping:8003
+      SHOPPING_SERVICE_URL: ${SHOPPING_SERVICE_URL:-http://shopping:8003/shopping}
     networks:
       - app-network
 
 volumes:
   mongo_data:
+
 
 networks:
   app-network:
