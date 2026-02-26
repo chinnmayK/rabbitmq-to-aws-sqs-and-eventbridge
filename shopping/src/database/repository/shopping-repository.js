@@ -2,112 +2,118 @@ const mongoose = require('mongoose');
 const { OrderModel, CartModel } = require('../models');
 const { v4: uuidv4 } = require('uuid');
 
-//Dealing with data base operations
+// Dealing with database operations
 class ShoppingRepository {
 
+    // ================= GET ORDERS =================
     async Orders(customerId) {
-
-        const orders = await OrderModel.find({ customerId });
-
-        return orders;
-
+        return await OrderModel.find({ customerId });
     }
 
+    // ================= GET CART =================
     async Cart(customerId) {
 
-        const cartItems = await CartModel.findOne({ customerId });
+        let cartItems = await CartModel.findOne({ customerId });
 
-        if (cartItems) {
-            return cartItems;
+        // ✅ FIX: Never throw error if cart doesn't exist
+        // Auto-create empty cart instead
+        if (!cartItems) {
+            cartItems = await CartModel.create({
+                customerId,
+                items: []
+            });
         }
 
-        throw new Error('Data Not found!');
+        return cartItems;
     }
 
+    // ================= ADD / REMOVE CART ITEM =================
     async AddCartItem(customerId, item, qty, isRemove) {
 
-        // return await CartModel.deleteMany();
-
-        const cart = await CartModel.findOne({ customerId: customerId })
+        let cart = await CartModel.findOne({ customerId });
 
         const { _id } = item;
 
-        if (cart) {
-
-            let isExist = false;
-
-            let cartItems = cart.items;
-
-
-            if (cartItems.length > 0) {
-
-                cartItems.map(item => {
-
-                    if (item.product._id.toString() === _id.toString()) {
-                        if (isRemove) {
-                            cartItems.splice(cartItems.indexOf(item), 1);
-                        } else {
-                            item.unit = qty;
-                        }
-                        isExist = true;
-                    }
-                });
-            }
-
-            if (!isExist && !isRemove) {
-                cartItems.push({ product: { ...item }, unit: qty });
-            }
-
-            cart.items = cartItems;
-
-            return await cart.save()
-
-        } else {
-
-            return await CartModel.create({
+        // ✅ If cart does not exist, create it
+        if (!cart) {
+            cart = await CartModel.create({
                 customerId,
-                items: [{ product: { ...item }, unit: qty }]
-            })
+                items: []
+            });
         }
 
+        let cartItems = cart.items;
+        let isExist = false;
 
+        if (cartItems.length > 0) {
+
+            cartItems.forEach(existingItem => {
+
+                if (existingItem.product._id.toString() === _id.toString()) {
+
+                    if (isRemove) {
+                        cartItems.splice(cartItems.indexOf(existingItem), 1);
+                    } else {
+                        existingItem.unit = qty;
+                    }
+
+                    isExist = true;
+                }
+
+            });
+        }
+
+        if (!isExist && !isRemove) {
+            cartItems.push({
+                product: { ...item },
+                unit: qty
+            });
+        }
+
+        cart.items = cartItems;
+
+        return await cart.save();
     }
 
+    // ================= CREATE NEW ORDER =================
     async CreateNewOrder(customerId, txnId) {
-        const cart = await CartModel.findOne({ customerId: customerId })
 
-        if (cart) {
-            let amount = 0;
-            let cartItems = cart.items;
+        const cart = await CartModel.findOne({ customerId });
 
-            if (cartItems.length > 0) {
-                cartItems.map(item => {
-                    amount += parseInt(item.product.price) * parseInt(item.unit);
-                });
-
-                const orderId = uuidv4();
-
-                const order = new OrderModel({
-                    orderId,
-                    customerId,
-                    amount,
-                    status: 'received',
-                    items: cartItems
-                })
-
-                cart.items = [];
-
-                const orderResult = await order.save();
-                await cart.save();
-                return orderResult;
-            }
+        if (!cart || cart.items.length === 0) {
+            return null; // ✅ safer return
         }
 
-        return {}
+        let amount = 0;
+
+        cart.items.forEach(item => {
+            amount += parseInt(item.product.price) * parseInt(item.unit);
+        });
+
+        const orderId = uuidv4();
+
+        const order = new OrderModel({
+            orderId,
+            customerId,
+            amount,
+            status: 'received',
+            items: cart.items
+        });
+
+        const orderResult = await order.save();
+
+        // ✅ Clear cart after order
+        cart.items = [];
+        await cart.save();
+
+        return orderResult;
     }
 
+    // ================= CREATE CART (used on CustomerCreated event) =================
     async CreateCart(customerId) {
+
         const existingCart = await CartModel.findOne({ customerId });
+
         if (existingCart) {
             return existingCart;
         }
