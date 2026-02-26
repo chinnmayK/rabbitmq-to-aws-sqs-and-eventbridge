@@ -1,40 +1,28 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require("@aws-sdk/client-sqs");
 const { EventBridgeClient, PutEventsCommand } = require("@aws-sdk/client-eventbridge");
 
 const {
   APP_SECRET,
-  CUSTOMER_SERVICE,
   EVENT_BUS_NAME,
   AWS_REGION,
 } = require("../config");
 
-// ------------------
-// EventBridge Setup
-// ------------------
-
-if (!process.env.EVENT_BUS_NAME) {
-  console.warn("⚠️ EVENT_BUS_NAME is not defined in environment variables");
-}
-
-const eventBridge = new EventBridgeClient({
-  region: AWS_REGION,
-});
-
-// ------------------
-// Utility Functions
-// ------------------
+// ======================================================
+// 🔐 AUTH & COMMON UTILITIES
+// ======================================================
 
 module.exports.GenerateSalt = async () => {
-  return bcrypt.genSalt();
+  return await bcrypt.genSalt();
 };
 
 module.exports.GeneratePassword = async (password, salt) => {
-  return bcrypt.hash(password, salt);
+  return await bcrypt.hash(password, salt);
 };
 
-module.exports.ValidatePassword = async (enteredPassword, savedPassword, salt) => {
-  return (await bcrypt.hash(enteredPassword, salt)) === savedPassword;
+module.exports.ValidatePassword = async (enteredPassword, savedPassword) => {
+  return await bcrypt.compare(enteredPassword, savedPassword);
 };
 
 module.exports.GenerateSignature = async (payload) => {
@@ -44,6 +32,8 @@ module.exports.GenerateSignature = async (payload) => {
 module.exports.ValidateSignature = async (req) => {
   try {
     const signature = req.get("Authorization");
+    if (!signature) return false;
+
     const payload = jwt.verify(signature.split(" ")[1], APP_SECRET);
     req.user = payload;
     return true;
@@ -57,30 +47,95 @@ module.exports.FormateData = (data) => {
   throw new Error("Data Not found!");
 };
 
-module.exports.PublishMessage = async (eventType, msg) => {
-  const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
+// ================= PUBLISH =================
 
+// 2️⃣ EventBridge Publication
+const eventBridge = new EventBridgeClient({
+  region: AWS_REGION,
+});
+
+module.exports.PublishMessage = async (service, msg) => {
   if (!EVENT_BUS_NAME) {
-    console.error("❌ Cannot publish to EventBridge: EVENT_BUS_NAME not set");
+    console.warn("⚠️ EVENT_BUS_NAME is not set. Skipping EventBridge publish.");
     return;
   }
 
   try {
-    await eventBridge.send(
-      new PutEventsCommand({
-        Entries: [
-          {
-            Source: "customer.service",
-            DetailType: eventType,
-            Detail: payload,
-            EventBusName: EVENT_BUS_NAME,
-          },
-        ],
-      })
-    );
+    const command = new PutEventsCommand({
+      Entries: [
+        {
+          Source: "customer.service",
+          DetailType: service,
+          Detail: JSON.stringify(msg),
+          EventBusName: EVENT_BUS_NAME,
+        },
+      ],
+    });
 
+    await eventBridge.send(command);
     console.log("✅ Event published to EventBridge");
   } catch (err) {
     console.error("❌ EventBridge publish failed:", err);
   }
+};
+
+// ======================================================
+// 🟡 SQS CONSUMER (NEW)
+// ======================================================
+
+module.exports.StartSQSConsumer = async (service) => {
+  const sqs = new SQSClient({
+    region: AWS_REGION,
+  });
+
+  const queueUrl = process.env.SQS_QUEUE_URL;
+
+  if (!queueUrl) {
+    console.warn("⚠️ SQS_QUEUE_URL not defined. Skipping SQS consumer.");
+    return;
+  }
+
+  console.log("🚀 Starting SQS Consumer...");
+
+  const poll = async () => {
+    try {
+      const command = new ReceiveMessageCommand({
+        QueueUrl: queueUrl,
+        MaxNumberOfMessages: 5,
+        WaitTimeSeconds: 20,
+      });
+
+      const response = await sqs.send(command);
+
+      if (response.Messages) {
+        for (const message of response.Messages) {
+          console.log("📥 Received Event from SQS");
+
+          const event = JSON.parse(message.Body);
+
+          // EventBridge wraps actual payload inside "detail"
+          const payload = JSON.stringify(event.detail);
+
+          await service.SubscribeEvents(payload);
+
+          // Delete after successful processing
+          await sqs.send(
+            new DeleteMessageCommand({
+              QueueUrl: queueUrl,
+              ReceiptHandle: message.ReceiptHandle,
+            })
+          );
+
+          console.log("🗑️ SQS message deleted");
+        }
+      }
+    } catch (err) {
+      console.error("❌ SQS polling error:", err);
+    }
+
+    // Continue polling
+    setImmediate(poll);
+  };
+
+  poll();
 };
