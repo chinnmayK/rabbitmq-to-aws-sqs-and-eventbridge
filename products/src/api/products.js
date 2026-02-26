@@ -10,6 +10,16 @@ const UserAuth = require("./middlewares/auth");
 module.exports = (app) => {
   const service = new ProductService();
 
+  app.get('/health', (req, res) => {
+    return res.status(200).json({ status: 'Products service healthy' });
+  });
+
+  app.get("/whoami", (req, res, next) => {
+    return res
+      .status(200)
+      .json({ msg: "/ or /products : I am products Service" });
+  });
+
   app.post("/product/create", async (req, res, next) => {
     const { name, desc, type, unit, price, available, suplier, banner } =
       req.body;
@@ -152,15 +162,6 @@ module.exports = (app) => {
     }
   });
 
-  app.get('/health', (req, res) => {
-    return res.status(200).json({ status: 'Products service healthy' });
-  });
-
-  app.get("/whoami", (req, res, next) => {
-    return res
-      .status(200)
-      .json({ msg: "/ or /products : I am products Service" });
-  });
 
   //get Top products and category
   app.get("/", async (req, res, next) => {
