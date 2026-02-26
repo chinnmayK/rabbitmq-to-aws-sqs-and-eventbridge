@@ -21,6 +21,12 @@ resource "aws_sqs_queue" "customer_created" {
   })
 }
 
+resource "aws_sqs_queue" "order_created" {
+  name                       = "r2sqs-eb-order-created-queue"
+  visibility_timeout_seconds = 30
+  message_retention_seconds  = 86400
+}
+
 ########################################################
 # EVENTBRIDGE BUS
 ########################################################
@@ -43,6 +49,15 @@ resource "aws_cloudwatch_event_rule" "customer_created_rule" {
   })
 }
 
+resource "aws_cloudwatch_event_rule" "order_created_rule" {
+  name           = "${var.project_name}-order-created-rule"
+  event_bus_name = aws_cloudwatch_event_bus.microservices_bus.name
+
+  event_pattern = jsonencode({
+    detail-type = ["OrderCreated"]
+  })
+}
+
 ########################################################
 # EVENT TARGET → SQS
 ########################################################
@@ -51,6 +66,12 @@ resource "aws_cloudwatch_event_target" "sqs_target" {
   rule           = aws_cloudwatch_event_rule.customer_created_rule.name
   event_bus_name = aws_cloudwatch_event_bus.microservices_bus.name
   arn            = aws_sqs_queue.customer_created.arn
+}
+
+resource "aws_cloudwatch_event_target" "sqs_order_target" {
+  rule           = aws_cloudwatch_event_rule.order_created_rule.name
+  event_bus_name = aws_cloudwatch_event_bus.microservices_bus.name
+  arn            = aws_sqs_queue.order_created.arn
 }
 
 ########################################################
@@ -70,6 +91,24 @@ resource "aws_sqs_queue_policy" "allow_eventbridge" {
         }
         Action   = "sqs:SendMessage"
         Resource = aws_sqs_queue.customer_created.arn
+      }
+    ]
+  })
+}
+
+resource "aws_sqs_queue_policy" "allow_eventbridge_order_created" {
+  queue_url = aws_sqs_queue.order_created.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action   = "sqs:SendMessage"
+        Resource = aws_sqs_queue.order_created.arn
       }
     ]
   })

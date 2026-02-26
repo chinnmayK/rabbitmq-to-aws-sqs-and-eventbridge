@@ -40,6 +40,7 @@ services:
       APP_SECRET: ${APP_SECRET}
       CUSTOMER_SERVICE: CUSTOMER_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/customer?authSource=admin
+      SQS_QUEUE_URL: https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-order-created-queue
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8001/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
       interval: 10s

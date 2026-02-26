@@ -5,3 +5,7 @@ output "customer_created_queue_url" {
 output "event_bus_name" {
   value = aws_cloudwatch_event_bus.microservices_bus.name
 }
+
+output "order_created_queue_url" {
+  value = aws_sqs_queue.order_created.id
+}
