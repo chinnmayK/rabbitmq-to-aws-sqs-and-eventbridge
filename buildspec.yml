@@ -68,4 +68,4 @@ artifacts:
     - appspec.yml
     - docker-compose.yml
     - deploy.sh
-  discard-paths: yes
+  discard-paths: yes 
