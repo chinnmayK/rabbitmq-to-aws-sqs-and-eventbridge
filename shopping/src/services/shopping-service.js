@@ -9,7 +9,7 @@ class ShoppingService {
 
   // ================= CART =================
   async GetCart({ _id }) {
-    return await this.repository.Cart({ customerId: _id });
+    return await this.repository.Cart(_id);
   }
 
   async ManageCart(customerId, product, qty, isRemove) {
