@@ -2,6 +2,17 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
+async function safeCall(url, options) {
+    for (let i = 0; i < 3; i++) {
+        try {
+            return await axios.get(url, options);
+        } catch (err) {
+            if (i === 2) throw err;
+            await new Promise(r => setTimeout(r, 1000));
+        }
+    }
+}
+
 router.get('/profile', async (req, res, next) => {
 
     try {
@@ -13,7 +24,7 @@ router.get('/profile', async (req, res, next) => {
         }
 
         // 1️⃣ Call Customer Service
-        const customerResponse = await axios.get(
+        const customerResponse = await safeCall(
             `${process.env.CUSTOMER_SERVICE_URL || 'http://customer:8001'}/profile`,
             {
                 headers: { Authorization: token }
@@ -21,7 +32,7 @@ router.get('/profile', async (req, res, next) => {
         );
 
         // 2️⃣ Call Shopping Service (Cart)
-        const cartResponse = await axios.get(
+        const cartResponse = await safeCall(
             `${process.env.SHOPPING_SERVICE_URL || 'http://shopping:8003'}/cart`,
             {
                 headers: { Authorization: token }

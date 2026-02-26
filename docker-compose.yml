@@ -40,6 +40,11 @@ services:
       APP_SECRET: ${APP_SECRET}
       CUSTOMER_SERVICE: CUSTOMER_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/customer?authSource=admin
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -61,6 +66,11 @@ services:
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/products?authSource=admin
       SQS_QUEUE_URL: ${SQS_QUEUE_URL}
       REDIS_URL: redis://redis:6379
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -80,6 +90,11 @@ services:
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/shopping?authSource=admin
       SQS_QUEUE_URL: ${SQS_QUEUE_URL}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -90,9 +105,12 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - customer
-      - products
-      - shopping
+      customer:
+        condition: service_healthy
+      products:
+        condition: service_healthy
+      shopping:
+        condition: service_healthy
     environment:
       PORT: 8000
       CUSTOMER_SERVICE_URL: ${CUSTOMER_SERVICE_URL:-http://customer:8001}
