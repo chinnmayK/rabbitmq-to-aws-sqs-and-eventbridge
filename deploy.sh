@@ -84,7 +84,7 @@ APP_SECRET=$APP_SECRET
 EVENT_BUS_NAME=$EVENT_BUS_NAME
 SQS_QUEUE_URL=$SQS_QUEUE_URL
 CUSTOMER_SERVICE_URL=http://customer:8001/customer
-SHOPPING_SERVICE_URL=http://shopping:8002/shopping
+SHOPPING_SERVICE_URL=http://shopping:8003/shopping
 EOF
 
 ########################################
