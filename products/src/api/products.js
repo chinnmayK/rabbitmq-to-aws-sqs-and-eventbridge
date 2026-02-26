@@ -152,9 +152,9 @@ module.exports = (app) => {
     }
   });
 
-  app.get('/health', (req, res, next) => {
-    return res.status(200).json({ msg: 'OK' })
-  })
+  app.get('/health', (req, res) => {
+    return res.status(200).json({ status: 'Products service healthy' });
+  });
 
   app.get("/whoami", (req, res, next) => {
     return res

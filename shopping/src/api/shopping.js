@@ -85,9 +85,9 @@ module.exports = async (app) => {
   });
 
   // ================= HEALTH CHECK =================
-  app.get('/health', (req, res, next) => {
-    return res.status(200).json({ msg: 'OK' })
-  })
+  app.get('/health', (req, res) => {
+    return res.status(200).json({ status: 'Shopping service healthy' });
+  });
 
   app.get("/whoami", (req, res) => {
     return res
