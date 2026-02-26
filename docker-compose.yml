@@ -95,9 +95,9 @@ services:
       - shopping
     environment:
       PORT: 8000
-      CUSTOMER_SERVICE_URL: ${CUSTOMER_SERVICE_URL:-http://customer:8001/customer}
+      CUSTOMER_SERVICE_URL: ${CUSTOMER_SERVICE_URL:-http://customer:8001}
       PRODUCT_SERVICE_URL: http://products:8002
-      SHOPPING_SERVICE_URL: ${SHOPPING_SERVICE_URL:-http://shopping:8003/shopping}
+      SHOPPING_SERVICE_URL: ${SHOPPING_SERVICE_URL:-http://shopping:8003}
     networks:
       - app-network
 
