@@ -54,7 +54,7 @@ cd "$APP_DIR"
 # Fetch Secrets
 ########################################
 MONGO_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id r2sqs-eb-mongo-credentials_v2 \
+  --secret-id r2sqs-eb-mongo-credentials \
   --region "$AWS_REGION" \
   --query SecretString \
   --output text)
@@ -62,7 +62,7 @@ MONGO_SECRET=$(aws secretsmanager get-secret-value \
 
 
 JWT_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id r2sqs-eb-jwt-secret_v2 \
+  --secret-id r2sqs-eb-jwt-secret \
   --region "$AWS_REGION" \
   --query SecretString \
   --output text)
