@@ -10,8 +10,8 @@ phases:
     commands:
       - echo "========== PRE-BUILD START =========="
 
-      # Fix Windows line endings (CRLF → LF)
-      - echo "Converting Windows line endings to Unix format..."
+      # Fix line endings (CRLF → LF)
+      - echo "Converting line endings to Unix format..."
       - find . -type f -name "*.sh" -exec sed -i 's/\r$//' {} +
       - find . -type f -name "appspec.yml" -exec sed -i 's/\r$//' {} +
       - find . -type f -name "docker-compose.yml" -exec sed -i 's/\r$//' {} +
