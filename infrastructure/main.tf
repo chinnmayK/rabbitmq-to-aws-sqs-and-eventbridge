@@ -30,9 +30,9 @@ module "ecr" {
 ########################################################
 
 module "secrets" {
-  source          = "./modules/secrets"
-  project_name    = var.project_name
-  redis_endpoint  = module.network.redis_endpoint
+  source         = "./modules/secrets"
+  project_name   = var.project_name
+  redis_endpoint = module.network.redis_endpoint
 }
 
 ########################################################
@@ -42,6 +42,7 @@ module "secrets" {
 module "messaging" {
   source       = "./modules/messaging"
   project_name = var.project_name
+  email        = var.email
 }
 
 ########################################################
@@ -68,8 +69,8 @@ module "ec2" {
 module "cicd" {
   source = "./modules/cicd"
 
-  project_name         = var.project_name
-  aws_region           = var.aws_region
+  project_name = var.project_name
+  aws_region   = var.aws_region
 
   codebuild_role_arn    = module.iam.codebuild_role_arn
   codepipeline_role_arn = module.iam.codepipeline_role_arn

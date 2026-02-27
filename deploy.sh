@@ -28,9 +28,11 @@ ECR_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 ########################################
-# ✅ ADD SQS QUEUE URL (NEW)
+# SQS Queue URLs (one per service)
 ########################################
-SQS_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/r2sqs-eb-customer-created-queue"
+CUSTOMER_CREATED_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-customer-created-queue"
+ORDER_CREATED_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-order-created-queue"
+ORDER_CREATED_PRODUCTS_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-order-created-products-queue"
 
 ########################################
 # Ensure Docker running
@@ -82,7 +84,11 @@ MONGO_PASSWORD=$MONGO_PASSWORD
 
 APP_SECRET=$APP_SECRET
 EVENT_BUS_NAME=$EVENT_BUS_NAME
-SQS_QUEUE_URL=$SQS_QUEUE_URL
+
+CUSTOMER_CREATED_QUEUE_URL=$CUSTOMER_CREATED_QUEUE_URL
+ORDER_CREATED_QUEUE_URL=$ORDER_CREATED_QUEUE_URL
+ORDER_CREATED_PRODUCTS_QUEUE_URL=$ORDER_CREATED_PRODUCTS_QUEUE_URL
+
 CUSTOMER_SERVICE_URL=http://customer:8001
 SHOPPING_SERVICE_URL=http://shopping:8003
 EOF

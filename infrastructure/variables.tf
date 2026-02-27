@@ -12,3 +12,8 @@ variable "github_repo" {
   description = "GitHub repo owner/name"
   type        = string
 }
+
+variable "email" {
+  description = "Email address for SNS alert notifications"
+  type        = string
+}

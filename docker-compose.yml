@@ -40,7 +40,7 @@ services:
       APP_SECRET: ${APP_SECRET}
       CUSTOMER_SERVICE: CUSTOMER_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/customer?authSource=admin
-      SQS_QUEUE_URL: https://sqs.ap-south-1.amazonaws.com/202533520289/r2sqs-eb-order-created-queue
+      SQS_QUEUE_URL: ${CUSTOMER_CREATED_QUEUE_URL}
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8001/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
       interval: 10s
@@ -65,7 +65,7 @@ services:
       APP_SECRET: ${APP_SECRET}
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/products?authSource=admin
-      SQS_QUEUE_URL: ${SQS_QUEUE_URL}
+      SQS_QUEUE_URL: ${ORDER_CREATED_PRODUCTS_QUEUE_URL}
       REDIS_URL: redis://redis:6379
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8002/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
@@ -90,7 +90,7 @@ services:
       APP_SECRET: ${APP_SECRET}
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/shopping?authSource=admin
-      SQS_QUEUE_URL: ${SQS_QUEUE_URL}
+      SQS_QUEUE_URL: ${ORDER_CREATED_QUEUE_URL}
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8003/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
       interval: 10s
