@@ -55,7 +55,7 @@ phases:
     commands:
       - echo "========== PUSH START =========="
 
-      # Push images
+      # Push images into ECR
       - docker push $ECR_URL/$PROJECT_NAME-customer:$IMAGE_TAG
       - docker push $ECR_URL/$PROJECT_NAME-products:$IMAGE_TAG
       - docker push $ECR_URL/$PROJECT_NAME-shopping:$IMAGE_TAG
