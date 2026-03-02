@@ -191,13 +191,12 @@ resource "aws_codepipeline" "microservices_pipeline" {
     name = "Analysis"
 
     action {
-      name             = "SonarQube_Analysis"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["source_output"]
-      output_artifacts = ["analysis_output"]
-      version          = "1"
+      name            = "SonarQube_Analysis"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      input_artifacts = ["source_output"]
+      version         = "1"
 
       configuration = {
         ProjectName = aws_codebuild_project.sonar_analysis.name
@@ -216,7 +215,7 @@ resource "aws_codepipeline" "microservices_pipeline" {
       category         = "Build"
       owner            = "AWS"
       provider         = "CodeBuild"
-      input_artifacts  = ["analysis_output"]
+      input_artifacts  = ["source_output"]
       output_artifacts = ["build_output"]
       version          = "1"
 
