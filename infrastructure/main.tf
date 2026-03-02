@@ -95,9 +95,10 @@ module "documentdb" {
   private_subnet_ids = module.network.private_subnet_ids
   ec2_sg_id          = module.network.security_group_id
   docdb_username     = var.docdb_username
-  docdb_password     = var.docdb_password
+  docdb_password     = module.secrets.mongo_password
 
   depends_on = [
-    module.network
+    module.network,
+    module.secrets
   ]
 }

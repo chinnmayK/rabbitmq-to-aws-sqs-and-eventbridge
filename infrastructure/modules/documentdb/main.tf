@@ -73,3 +73,19 @@ resource "aws_docdb_cluster_instance" "this" {
     Name = "${var.project_name}-docdb-instance"
   }
 }
+
+########################################################
+# STORE ENDPOINT IN SSM (for deploy.sh)
+########################################################
+
+resource "aws_ssm_parameter" "docdb_endpoint" {
+  name        = "/${var.project_name}/docdb_endpoint"
+  description = "DocumentDB cluster endpoint"
+  type        = "String"
+  value       = aws_docdb_cluster.this.endpoint
+  overwrite   = true
+
+  tags = {
+    Name = "${var.project_name}-docdb-endpoint"
+  }
+}
