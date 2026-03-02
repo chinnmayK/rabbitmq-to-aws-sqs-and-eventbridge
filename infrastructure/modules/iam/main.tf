@@ -140,6 +140,28 @@ resource "aws_iam_role_policy_attachment" "codebuild_s3" {
 }
 
 ########################################################
+# CODEBUILD SSM (for SonarQube token)
+########################################################
+
+resource "aws_iam_role_policy" "codebuild_ssm_policy" {
+  name = "${var.project_name}-codebuild-ssm"
+  role = aws_iam_role.codebuild_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath"
+      ]
+      Resource = "arn:aws:ssm:*:*:parameter/r2sqs-eb/*"
+    }]
+  })
+}
+
+########################################################
 # CODEPIPELINE ROLE
 ########################################################
 
@@ -204,8 +226,8 @@ resource "aws_iam_role_policy" "codepipeline_codestar_permission" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Action = "codestar-connections:UseConnection"
+      Effect   = "Allow"
+      Action   = "codestar-connections:UseConnection"
       Resource = "*"
     }]
   })
@@ -259,7 +281,7 @@ resource "aws_iam_role_policy" "codepipeline_codedeploy_policy" {
 ########################################################
 
 resource "aws_iam_policy" "ec2_elasticache_minimal" {
-  name        = "${var.project_name}-elasticache-minimal"
+  name = "${var.project_name}-elasticache-minimal"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -278,4 +300,27 @@ resource "aws_iam_policy" "ec2_elasticache_minimal" {
 resource "aws_iam_role_policy_attachment" "ec2_elasticache_attach" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.ec2_elasticache_minimal.arn
+}
+
+########################################################
+# EC2 SSM WRITE (for SonarQube token auto-storage)
+########################################################
+
+resource "aws_iam_role_policy" "ec2_ssm_write" {
+  name = "${var.project_name}-ec2-ssm-write"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath"
+      ]
+      Resource = "arn:aws:ssm:*:*:parameter/${var.project_name}/*"
+    }]
+  })
 }

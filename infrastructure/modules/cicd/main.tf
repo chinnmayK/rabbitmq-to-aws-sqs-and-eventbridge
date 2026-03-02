@@ -65,6 +65,44 @@ resource "aws_codebuild_project" "microservices_build" {
 }
 
 ############################################################
+# CODEBUILD PROJECT — SONARQUBE ANALYSIS
+############################################################
+
+resource "aws_codebuild_project" "sonar_analysis" {
+  name         = "${var.project_name}-sonar-analysis"
+  description  = "SonarQube static analysis + quality gate"
+  service_role = var.codebuild_role_arn
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:7.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = false
+
+    environment_variable {
+      name  = "AWS_DEFAULT_REGION"
+      value = var.aws_region
+    }
+
+    environment_variable {
+      name  = "PROJECT_NAME"
+      value = var.project_name
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "buildspec.analysis.yml"
+  }
+
+  build_timeout = 15
+}
+
+############################################################
 # CODEDEPLOY APPLICATION
 ############################################################
 
@@ -147,6 +185,27 @@ resource "aws_codepipeline" "microservices_pipeline" {
   }
 
   ################################
+  # ANALYSIS STAGE (SonarQube)
+  ################################
+  stage {
+    name = "Analysis"
+
+    action {
+      name             = "SonarQube_Analysis"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"]
+      output_artifacts = ["analysis_output"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.sonar_analysis.name
+      }
+    }
+  }
+
+  ################################
   # BUILD STAGE
   ################################
   stage {
@@ -157,7 +216,7 @@ resource "aws_codepipeline" "microservices_pipeline" {
       category         = "Build"
       owner            = "AWS"
       provider         = "CodeBuild"
-      input_artifacts  = ["source_output"]
+      input_artifacts  = ["analysis_output"]
       output_artifacts = ["build_output"]
       version          = "1"
 
@@ -191,6 +250,7 @@ resource "aws_codepipeline" "microservices_pipeline" {
   depends_on = [
     aws_codestarconnections_connection.github,
     aws_codebuild_project.microservices_build,
+    aws_codebuild_project.sonar_analysis,
     aws_codedeploy_app.app,
     aws_s3_bucket_server_side_encryption_configuration.artifact_encryption
   ]

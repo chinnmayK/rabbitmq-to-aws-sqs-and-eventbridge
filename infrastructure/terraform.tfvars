@@ -5,3 +5,6 @@ email        = "chinmay.k@techcanopy.com"
 
 # DocumentDB — password must be set via: export TF_VAR_docdb_password="yourpassword"
 docdb_username = "docdbadmin"
+
+# SonarQube — running on existing EC2 port 9000
+sonar_host_url = "http://3.109.48.160:9000"

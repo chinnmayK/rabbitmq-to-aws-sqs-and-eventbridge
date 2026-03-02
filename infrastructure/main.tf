@@ -76,6 +76,8 @@ module "cicd" {
   codepipeline_role_arn = module.iam.codepipeline_role_arn
   codedeploy_role_arn   = module.iam.codedeploy_role_arn
 
+  sonar_host_url = var.sonar_host_url
+
   depends_on = [
     module.iam
   ]

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euxo pipefail
+set -uo pipefail
 
 exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
 
@@ -36,6 +36,7 @@ fi
 
 echo "Detected region: $REGION"
 export AWS_REGION="$REGION"
+PROJECT_NAME="r2sqs-eb"
 
 ########################################
 # Update System
@@ -176,5 +177,108 @@ chown -R ubuntu:ubuntu /opt/node-app
 
 echo "CUSTOMER_SERVICE_URL=http://customer:8001" >> /opt/node-app/.env
 echo "SHOPPING_SERVICE_URL=http://shopping:8003" >> /opt/node-app/.env
+
+########################################
+# Launch SonarQube (static analysis)
+########################################
+echo "Starting SonarQube container..."
+
+# Increase vm.max_map_count required by Elasticsearch inside SonarQube
+sysctl -w vm.max_map_count=524288
+echo "vm.max_map_count=524288" >> /etc/sysctl.conf
+
+docker run -d \
+  --name sonarqube \
+  --restart always \
+  -p 9000:9000 \
+  -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true \
+  sonarqube:lts
+
+echo "SonarQube container started — waiting for it to become ready..."
+
+########################################
+# Wait for SonarQube to be ready
+########################################
+SONAR_URL="http://localhost:9000"
+SONAR_DEFAULT_PASS="admin"
+SONAR_NEW_PASS="SonarAdmin@123"
+SONAR_PROJECT_KEY="r2sqs-eb"
+MAX_WAIT=180   # seconds
+
+elapsed=0
+until curl -sf "${SONAR_URL}/api/system/status" | grep -q '"status":"UP"'; do
+  if [ $elapsed -ge $MAX_WAIT ]; then
+    echo "ERROR: SonarQube did not become ready within ${MAX_WAIT}s"
+    exit 1
+  fi
+  echo "Waiting for SonarQube... (${elapsed}s elapsed)"
+  sleep 10
+  elapsed=$((elapsed + 10))
+done
+
+echo "SonarQube is UP after ${elapsed}s"
+
+########################################
+# Change default admin password
+########################################
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+  -X POST "${SONAR_URL}/api/users/change_password" \
+  -u "admin:${SONAR_DEFAULT_PASS}" \
+  -d "login=admin&password=${SONAR_NEW_PASS}&previousPassword=${SONAR_DEFAULT_PASS}")
+
+if [ "$HTTP_STATUS" = "204" ] || [ "$HTTP_STATUS" = "200" ]; then
+  echo "Admin password changed successfully"
+else
+  echo "Admin password already changed or failed (HTTP $HTTP_STATUS) — continuing"
+fi
+
+########################################
+# Create SonarQube Project
+########################################
+curl -s -X POST "${SONAR_URL}/api/projects/create" \
+  -u "admin:${SONAR_NEW_PASS}" \
+  -d "project=${SONAR_PROJECT_KEY}&name=r2sqs-eb+Microservices&visibility=private" \
+  | jq '.' || true
+
+echo "SonarQube project '${SONAR_PROJECT_KEY}' created (or already exists)"
+
+########################################
+# Generate CI Token and store in SSM
+########################################
+TOKEN_RESPONSE=$(curl -s -X POST "${SONAR_URL}/api/user_tokens/generate" \
+  -u "admin:${SONAR_NEW_PASS}" \
+  -d "name=codebuild-token&type=GLOBAL_ANALYSIS_TOKEN")
+
+SONAR_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token // empty')
+
+if [ -z "$SONAR_TOKEN" ]; then
+  echo "ERROR: Failed to generate SonarQube token: $TOKEN_RESPONSE"
+  exit 1
+fi
+
+echo "SonarQube token generated — storing in SSM..."
+
+# Store token (SecureString)
+aws ssm put-parameter \
+  --name "/${PROJECT_NAME}/sonar_token" \
+  --value "$SONAR_TOKEN" \
+  --type SecureString \
+  --overwrite \
+  --region "$AWS_REGION"
+
+# Store Sonar host URL (plain String — CodeBuild reads this too)
+PUBLIC_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/public-ipv4)
+
+aws ssm put-parameter \
+  --name "/${PROJECT_NAME}/sonar_host_url" \
+  --value "http://${PUBLIC_IP}:9000" \
+  --type String \
+  --overwrite \
+  --region "$AWS_REGION"
+
+echo "SSM parameters stored:"
+echo "  /${PROJECT_NAME}/sonar_token     → (SecureString)"
+echo "  /${PROJECT_NAME}/sonar_host_url  → http://${PUBLIC_IP}:9000"
 
 echo "===== EC2 Bootstrap Complete ====="

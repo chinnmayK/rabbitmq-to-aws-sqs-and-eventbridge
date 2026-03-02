@@ -29,3 +29,9 @@ variable "docdb_password" {
   type        = string
   sensitive   = true
 }
+
+variable "sonar_host_url" {
+  description = "SonarQube host URL for CodeBuild analysis (e.g. http://EC2_IP:9000)"
+  type        = string
+  default     = ""
+}

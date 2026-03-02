@@ -1,0 +1,55 @@
+version: 0.2
+
+# ============================================================
+# SonarQube Analysis Buildspec
+# Runs BEFORE Docker build stage in CodePipeline.
+# If quality gate fails → this build fails → pipeline stops.
+# ============================================================
+
+env:
+  parameter-store:
+    SONAR_TOKEN: /r2sqs-eb/sonar_token
+    SONAR_HOST_URL: /r2sqs-eb/sonar_host_url
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      - echo "========== INSTALL: sonar-scanner CLI =========="
+
+      # Download sonar-scanner CLI
+      - SONAR_SCANNER_VERSION=6.2.1.4610
+      - wget -q "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip"
+      - unzip -q sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
+      - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
+      - echo "export PATH=\$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin" >> ~/.bashrc
+
+      - echo "========== sonar-scanner installed =========="
+
+  pre_build:
+    commands:
+      - echo "========== PRE-ANALYSIS: Installing dependencies =========="
+      - cd customer && npm ci --omit=dev && cd ..
+      - cd products && npm ci --omit=dev && cd ..
+      - cd shopping && npm ci --omit=dev && cd ..
+      - echo "========== Dependencies installed =========="
+
+  build:
+    commands:
+      - echo "========== ANALYSIS: Running sonar-scanner =========="
+      - echo "Sonar host -> $SONAR_HOST_URL"
+
+      - SONAR_SCANNER_VERSION=6.2.1.4610
+      - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
+
+      - sonar-scanner \
+          -Dsonar.projectKey=r2sqs-eb \
+          -Dsonar.projectName="r2sqs-eb Microservices" \
+          -Dsonar.sources=customer/src,products/src,shopping/src \
+          -Dsonar.exclusions="**/node_modules/**,**/*.test.js" \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.token=$SONAR_TOKEN \
+          -Dsonar.qualitygate.wait=true
+
+      - echo "========== ANALYSIS COMPLETE — Quality Gate PASSED =========="
