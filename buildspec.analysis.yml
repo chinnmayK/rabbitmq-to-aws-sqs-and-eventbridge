@@ -35,15 +35,5 @@ phases:
       - echo "========== ANALYSIS: Running sonar-scanner =========="
       - set -e
       - echo "Sonar host -> $SONAR_HOST_URL"
-
-      - |
-        $SONAR_SCANNER_HOME/bin/sonar-scanner \
-        -Dsonar.projectKey=r2sqs-eb \
-        -Dsonar.projectName="r2sqs-eb Microservices" \
-        -Dsonar.sources=customer/src,products/src,shopping/src \
-        -Dsonar.exclusions=**/node_modules/**,**/*.test.js \
-        -Dsonar.host.url=$SONAR_HOST_URL \
-        -Dsonar.token=$SONAR_TOKEN \
-        -Dsonar.qualitygate.wait=true
-
-      - echo "========== ANALYSIS COMPLETE =========="
+      - $SONAR_SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=r2sqs-eb -Dsonar.projectName="r2sqs-eb Microservices" -Dsonar.sources=customer/src,products/src,shopping/src -Dsonar.exclusions=**/node_modules/**,**/*.test.js -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+      - echo "========== ANALYSIS COMPLETE =========="  
