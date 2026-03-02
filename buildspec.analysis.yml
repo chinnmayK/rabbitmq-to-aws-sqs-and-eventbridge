@@ -1,10 +1,7 @@
 version: 0.2
 
-# ============================================================
 # SonarQube Analysis Buildspec
-# Runs BEFORE Docker build stage in CodePipeline.
-# If quality gate fails → this build fails → pipeline stops.
-# ============================================================
+# If Quality Gate fails → build fails → pipeline stops
 
 env:
   parameter-store:
@@ -17,19 +14,17 @@ phases:
       java: corretto17
     commands:
       - echo "========== INSTALL: sonar-scanner CLI =========="
-
-      # Download sonar-scanner CLI
+      - set -e
       - export SONAR_SCANNER_VERSION=6.2.1.4610
-      - wget -q "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip"
+      - wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
       - unzip -q sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
-      - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
-      - echo "export PATH=\$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin" >> ~/.bashrc
-
+      - export SONAR_SCANNER_HOME=$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64
       - echo "========== sonar-scanner installed =========="
 
   pre_build:
     commands:
       - echo "========== PRE-ANALYSIS: Installing dependencies =========="
+      - set -e
       - cd customer && npm ci --omit=dev && cd ..
       - cd products && npm ci --omit=dev && cd ..
       - cd shopping && npm ci --omit=dev && cd ..
@@ -38,19 +33,17 @@ phases:
   build:
     commands:
       - echo "========== ANALYSIS: Running sonar-scanner =========="
+      - set -e
       - echo "Sonar host -> $SONAR_HOST_URL"
 
-      - export SONAR_SCANNER_VERSION=6.2.1.4610
-      - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
-
       - |
-        sonar-scanner \
+        $SONAR_SCANNER_HOME/bin/sonar-scanner \
         -Dsonar.projectKey=r2sqs-eb \
         -Dsonar.projectName="r2sqs-eb Microservices" \
         -Dsonar.sources=customer/src,products/src,shopping/src \
-        -Dsonar.exclusions="**/node_modules/**,**/*.test.js" \
+        -Dsonar.exclusions=**/node_modules/**,**/*.test.js \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.token=$SONAR_TOKEN \
         -Dsonar.qualitygate.wait=true
 
-      - echo "========== ANALYSIS COMPLETE — Quality Gate PASSED =========="
+      - echo "========== ANALYSIS COMPLETE =========="
