@@ -70,8 +70,17 @@ class CustomerRepository {
     const profile = await CustomerModel.findById(customerId);
     if (!profile) throw new Error("Customer not found");
 
+    // Ensure orders array exists
     profile.orders = profile.orders || [];
-    profile.orders.push(order);
+
+    // Map the incoming order to the shape expected by the Customer schema
+    const sanitizedOrder = {
+      _id: order.orderId || order._id,
+      amount: order.amount,
+      date: order.createdAt || new Date()
+    };
+
+    profile.orders.push(sanitizedOrder);
 
     return await profile.save();
   }
