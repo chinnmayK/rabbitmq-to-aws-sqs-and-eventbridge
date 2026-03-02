@@ -2,6 +2,8 @@ const ShoppingService = require("../services/shopping-service");
 const { PublishMessage } = require("../utils");
 const UserAuth = require("./middlewares/auth");
 const { CUSTOMER_SERVICE } = require("../config");
+const { v4: uuidv4 } = require("uuid");
+const logger = require("../logger");
 
 module.exports = async (app) => {
   const service = new ShoppingService();
@@ -9,8 +11,10 @@ module.exports = async (app) => {
   // ================= PLACE ORDER =================
   app.post("/order", UserAuth, async (req, res, next) => {
     try {
+      const correlationId = uuidv4();
       const { _id } = req.user;
       const { txnNumber } = req.body;
+      logger.info('POST /order', { correlationId, customerId: _id, txnNumber });
 
       const { data } = await service.PlaceOrder({ _id, txnNumber });
 

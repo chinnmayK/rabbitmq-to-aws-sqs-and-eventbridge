@@ -13,3 +13,8 @@ output "vpc_id" {
 output "redis_endpoint" {
   value = aws_elasticache_cluster.redis.cache_nodes[0].address
 }
+
+output "private_subnet_ids" {
+  description = "Private subnet IDs for DocumentDB subnet group (spans 2 AZs)"
+  value       = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+}

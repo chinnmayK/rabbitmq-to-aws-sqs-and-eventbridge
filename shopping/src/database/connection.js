@@ -1,17 +1,18 @@
 const mongoose = require("mongoose");
 const { MONGO_URI } = require("../config");
+const logger = require("../logger");
 
 const databaseConnection = async () => {
   try {
     await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      tls: true,
+      tlsCAFile: "/app/global-bundle.pem",
+      retryWrites: false,
     });
 
-    console.log("✅ DB Connected");
+    logger.info("Connected to DocumentDB");
   } catch (err) {
-    console.error("❌ DB Connection Error");
-    console.error(err.message);
+    logger.error("DB Connection Error", { error: err.message });
     process.exit(1);
   }
 };

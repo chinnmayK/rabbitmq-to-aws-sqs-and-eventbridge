@@ -74,13 +74,34 @@ APP_SECRET=$(echo "$JWT_SECRET" | jq -r '.jwt')
 EVENT_BUS_NAME="${PROJECT_NAME}-bus"
 
 ########################################
+# Fetch DocumentDB Endpoint
+########################################
+DOCDB_ENDPOINT=$(aws ssm get-parameter \
+  --name "/${PROJECT_NAME}/docdb_endpoint" \
+  --region "$AWS_REGION" \
+  --query Parameter.Value \
+  --output text 2>/dev/null || \
+  terraform -chdir=/opt/terraform output -raw docdb_endpoint 2>/dev/null || \
+  echo "")
+
+if [ -z "$DOCDB_ENDPOINT" ]; then
+  echo "⚠️  DOCDB_ENDPOINT not found — services will fail to connect to DB"
+fi
+
+DOCDB_USERNAME="$MONGO_USERNAME"
+DOCDB_PASSWORD="$MONGO_PASSWORD"
+
+########################################
 # Write .env file
 ########################################
 cat > .env <<EOF
 ACCOUNT_ID=$ACCOUNT_ID
 AWS_REGION=$AWS_REGION
-MONGO_USERNAME=$MONGO_USERNAME
-MONGO_PASSWORD=$MONGO_PASSWORD
+
+# DocumentDB credentials (replaces local MongoDB)
+DOCDB_ENDPOINT=$DOCDB_ENDPOINT
+DOCDB_USERNAME=$DOCDB_USERNAME
+DOCDB_PASSWORD=$DOCDB_PASSWORD
 
 APP_SECRET=$APP_SECRET
 EVENT_BUS_NAME=$EVENT_BUS_NAME

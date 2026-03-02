@@ -17,3 +17,15 @@ variable "email" {
   description = "Email address for SNS alert notifications"
   type        = string
 }
+
+variable "docdb_username" {
+  description = "Master username for DocumentDB"
+  type        = string
+  default     = "docdbadmin"
+}
+
+variable "docdb_password" {
+  description = "Master password for DocumentDB — set via TF_VAR_docdb_password, never hardcoded"
+  type        = string
+  sensitive   = true
+}

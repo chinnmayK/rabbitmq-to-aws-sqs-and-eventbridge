@@ -12,3 +12,13 @@ output "redis_endpoint" {
   description = "Redis cluster endpoint"
   value       = module.network.redis_endpoint
 }
+
+output "docdb_endpoint" {
+  description = "DocumentDB cluster write endpoint"
+  value       = module.documentdb.endpoint
+}
+
+output "docdb_port" {
+  description = "DocumentDB cluster port"
+  value       = module.documentdb.port
+}

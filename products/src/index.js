@@ -5,6 +5,7 @@ const expressApp = require('./express-app');
 const ProductService = require('./services/product-service');
 
 const { StartSQSConsumer } = require('./utils');
+const logger = require('./logger');
 
 const StartServer = async () => {
     try {
@@ -21,14 +22,14 @@ const StartServer = async () => {
         StartSQSConsumer(service);
 
         app.listen(PORT, () => {
-            console.log(`Products service listening on port ${PORT}`);
+            logger.info('Products service listening', { port: PORT });
         }).on('error', (err) => {
-            console.error('Server failed to start:', err);
+            logger.error('Server failed to start', { error: err.message });
             process.exit(1);
         });
 
     } catch (err) {
-        console.error('Startup error:', err);
+        logger.error('Startup error', { error: err.message });
         process.exit(1);
     }
 };

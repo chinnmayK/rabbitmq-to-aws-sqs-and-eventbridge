@@ -72,6 +72,52 @@ resource "aws_route_table_association" "public_assoc" {
 }
 
 ########################################################
+# PRIVATE SUBNETS (for DocumentDB — 2 AZs required)
+########################################################
+
+resource "aws_subnet" "private_1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.10.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
+
+  tags = {
+    Name = "${var.project_name}-private-subnet-1"
+  }
+}
+
+resource "aws_subnet" "private_2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.11.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
+
+  tags = {
+    Name = "${var.project_name}-private-subnet-2"
+  }
+}
+
+########################################################
+# PRIVATE ROUTE TABLE (no Internet Gateway)
+########################################################
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "${var.project_name}-private-rt"
+  }
+}
+
+resource "aws_route_table_association" "private_assoc_1" {
+  subnet_id      = aws_subnet.private_1.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_assoc_2" {
+  subnet_id      = aws_subnet.private_2.id
+  route_table_id = aws_route_table.private.id
+}
+
+########################################################
 # SECURITY GROUP - EC2
 ########################################################
 

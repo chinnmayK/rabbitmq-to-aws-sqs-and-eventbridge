@@ -7,6 +7,7 @@ const {
   ValidatePassword,
   PublishMessage,
 } = require("../utils");
+const logger = require("../logger");
 
 class CustomerService {
   constructor() {
@@ -31,6 +32,8 @@ class CustomerService {
       salt,
     });
 
+    logger.info("Customer Signed Up", { email, customerId: customer._id });
+
     const token = await GenerateSignature({
       email: customer.email,
       _id: customer._id,
@@ -48,10 +51,8 @@ class CustomerService {
 
     await PublishMessage(
       "CustomerCreated",
-      payload // msg is stringified in PublishMessage now
+      payload
     );
-
-    console.log("📢 CustomerCreated event published");
 
     return FormateData({
       id: customer._id,
@@ -81,6 +82,8 @@ class CustomerService {
       email: existingCustomer.email,
       _id: existingCustomer._id,
     });
+
+    logger.info("Customer Signed In", { email, customerId: existingCustomer._id });
 
     return FormateData({
       id: existingCustomer._id,
@@ -112,6 +115,8 @@ class CustomerService {
       ...addressData,
     });
 
+    logger.info("Customer Address Added", { customerId });
+
     // 🔥 Publish CustomerAddressAdded
     const payload = {
       event: "CustomerAddressAdded",
@@ -125,8 +130,6 @@ class CustomerService {
       "CustomerAddressAdded",
       payload
     );
-
-    console.log("📢 CustomerAddressAdded event published");
 
     return FormateData(address);
   }
@@ -150,7 +153,7 @@ class CustomerService {
     // Idempotency check: Don't process the same order twice
     const existingOrder = profile.orders && profile.orders.find(o => o._id === order._id);
     if (existingOrder) {
-      console.log(`⚠️ Order ${order._id} already exists for customer ${customerId}. Skipping.`);
+      logger.warn("Order already exists for customer, skipping", { orderId: order._id, customerId });
       return FormateData(profile);
     }
 
@@ -158,6 +161,8 @@ class CustomerService {
       customerId,
       order
     );
+
+    logger.info("Order Linked to Customer", { customerId, orderId: order._id });
 
     // 🔥 Publish CustomerOrderLinked
     const payload = {
@@ -173,17 +178,15 @@ class CustomerService {
       payload
     );
 
-    console.log("📢 CustomerOrderLinked event published");
-
     return FormateData(result);
   }
 
   // ================= EVENT SUBSCRIBER =================
-  async SubscribeEvents(payload) {
-    console.log("Customer Service Processing Events");
-
+  async SubscribeEvents(payload, correlationId) {
     const { event, data } = JSON.parse(payload);
     const { userId, product, order, qty } = data;
+
+    logger.info("Processing Event", { event, correlationId });
 
     switch (event) {
       case "ADD_TO_WISHLIST":
@@ -197,6 +200,7 @@ class CustomerService {
         break;
 
       default:
+        logger.warn("Unknown event received", { event, correlationId });
         break;
     }
   }

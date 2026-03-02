@@ -2,6 +2,7 @@ const { ProductRepository } = require("../database");
 const { FormateData, PublishMessage } = require("../utils");
 const { CUSTOMER_SERVICE, SHOPPING_SERVICE } = require("../config");
 const redisClient = require("../utils/redis-client");
+const logger = require("../logger");
 
 class ProductService {
   constructor() {
@@ -13,6 +14,7 @@ class ProductService {
     const product = await this.repository.CreateProduct(productInputs);
 
     if (product) {
+      logger.info("Product Created", { productId: product._id, name: product.name });
       // 🚀 Publish ProductCreated event
       const payload = {
         event: "ProductCreated",
@@ -43,11 +45,11 @@ class ProductService {
     const cached = await redisClient.get(cacheKey);
 
     if (cached) {
-      console.log("⚡ CACHE HIT");
+      logger.info("Cache Hit", { cacheKey });
       return FormateData(JSON.parse(cached));
     }
 
-    console.log("🐢 CACHE MISS → DB");
+    logger.info("Cache Miss — querying DB", { cacheKey });
 
     const products = await this.repository.Products();
 
@@ -91,17 +93,17 @@ class ProductService {
   }
 
   // ================= EVENT HANDLER =================
-  async SubscribeEvents(payload) {
-    console.log("Products Service Processing Events");
-
+  async SubscribeEvents(payload, correlationId) {
     const { event, data } = JSON.parse(payload);
+
+    logger.info("Processing Event", { event, correlationId });
 
     switch (event) {
       case "OrderCreated":
         // Idempotency: Ignore duplicate OrderCreated events
         const isProcessed = await redisClient.get(`processed_order:${data.order._id}`);
         if (isProcessed) {
-          console.log(`⚠️ Order ${data.order._id} already processed by Products Service. Skipping.`);
+          logger.warn("Order already processed by Products Service, skipping", { orderId: data.order._id, correlationId });
           break;
         }
 
@@ -113,6 +115,7 @@ class ProductService {
         });
         break;
       default:
+        logger.warn("Unknown event received", { event, correlationId });
         break;
     }
   }
@@ -124,7 +127,7 @@ class ProductService {
       order.items.map(async (item) => {
         // Decrease stock (qty is negative for Reduce)
         await this.repository.UpdateInventory(item.product._id, -item.unit);
-        console.log(`📉 Inventory reduced for product ${item.product._id} by ${item.unit}`);
+        logger.info("Inventory Reduced", { productId: item.product._id, qty: item.unit });
       });
     }
   }

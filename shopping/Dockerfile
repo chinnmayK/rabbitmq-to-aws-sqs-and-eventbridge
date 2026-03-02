@@ -18,6 +18,10 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=builder /app /app
 
+# Download AWS DocumentDB TLS CA bundle
+RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+    -O /app/global-bundle.pem
+
 USER appuser
 
 ENV PORT=8003

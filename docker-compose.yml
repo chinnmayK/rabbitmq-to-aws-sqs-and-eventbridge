@@ -2,20 +2,6 @@ version: "3.9"
 
 services:
 
-  mongodb:
-    image: public.ecr.aws/docker/library/mongo:7
-    container_name: mongodb
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - app-network
-
   redis:
     image: redis:7
     container_name: redis
@@ -31,15 +17,14 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
-    depends_on:
-      - mongodb
     environment:
       PORT: 8001
+      SERVICE_NAME: customer
       AWS_REGION: ${AWS_REGION}
       EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
       CUSTOMER_SERVICE: CUSTOMER_SERVICE
-      MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/customer?authSource=admin
+      MONGO_URI: mongodb://${DOCDB_USERNAME}:${DOCDB_PASSWORD}@${DOCDB_ENDPOINT}:27017/customer?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
       SQS_QUEUE_URL: ${ORDER_CREATED_QUEUE_URL}
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8001/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
@@ -56,15 +41,15 @@ services:
     ports:
       - "8002:8002"
     depends_on:
-      - mongodb
       - redis
     environment:
       PORT: 8002
+      SERVICE_NAME: products
       AWS_REGION: ${AWS_REGION}
       EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
       SHOPPING_SERVICE: SHOPPING_SERVICE
-      MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/products?authSource=admin
+      MONGO_URI: mongodb://${DOCDB_USERNAME}:${DOCDB_PASSWORD}@${DOCDB_ENDPOINT}:27017/products?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
       SQS_QUEUE_URL: ${ORDER_CREATED_PRODUCTS_QUEUE_URL}
       REDIS_URL: redis://redis:6379
     healthcheck:
@@ -81,16 +66,15 @@ services:
     restart: unless-stopped
     ports:
       - "8003:8003"
-    depends_on:
-      - mongodb
     environment:
       PORT: 8003
+      SERVICE_NAME: shopping
       AWS_REGION: ${AWS_REGION}
       EVENT_BUS_NAME: ${EVENT_BUS_NAME}
       APP_SECRET: ${APP_SECRET}
       SHOPPING_SERVICE: SHOPPING_SERVICE
-      MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/shopping?authSource=admin
-      SQS_QUEUE_URL: ${ORDER_CREATED_QUEUE_URL}
+      MONGO_URI: mongodb://${DOCDB_USERNAME}:${DOCDB_PASSWORD}@${DOCDB_ENDPOINT}:27017/shopping?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
+      SQS_QUEUE_URL: ${CUSTOMER_CREATED_QUEUE_URL}
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8003/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
       interval: 10s
@@ -121,8 +105,6 @@ services:
       - app-network
 
 volumes:
-  mongo_data:
-
 
 networks:
   app-network:

@@ -1,6 +1,7 @@
 const CustomerService = require('../services/customer-service');
 const UserAuth = require('./middlewares/auth');
-
+const { v4: uuidv4 } = require('uuid');
+const logger = require('../logger');
 
 
 module.exports = (app) => {
@@ -9,18 +10,19 @@ module.exports = (app) => {
 
 
     app.post('/signup', async (req, res, next) => {
+        const correlationId = uuidv4();
         const { email, password, phone } = req.body;
+        logger.info('POST /signup', { correlationId, email });
         const { data } = await service.SignUp({ email, password, phone });
         res.json(data);
 
     });
 
     app.post('/login', async (req, res, next) => {
-
+        const correlationId = uuidv4();
         const { email, password } = req.body;
-
+        logger.info('POST /login', { correlationId, email });
         const { data } = await service.SignIn({ email, password });
-
         res.json(data);
 
     });

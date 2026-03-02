@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
+const { v4: uuidv4 } = require("uuid");
 const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require("@aws-sdk/client-sqs");
 const { EventBridgeClient, PutEventsCommand } = require("@aws-sdk/client-eventbridge");
 
@@ -10,6 +11,7 @@ const {
   AWS_REGION,
   SQS_QUEUE_URL,
 } = require("../config");
+const logger = require("../logger");
 
 // ------------------
 // Utility
@@ -51,11 +53,15 @@ const eventBridge = new EventBridgeClient({
   region: AWS_REGION,
 });
 
-module.exports.PublishMessage = async (service, msg) => {
+module.exports.PublishMessage = async (service, msg, correlationId) => {
   if (!EVENT_BUS_NAME) {
-    console.warn("⚠️ EVENT_BUS_NAME is not set. Skipping EventBridge publish.");
+    logger.warn("EVENT_BUS_NAME is not set. Skipping EventBridge publish.");
     return;
   }
+
+  const cid = correlationId || uuidv4();
+
+  logger.info("Publishing Event", { service, event: msg.event, correlationId: cid });
 
   try {
     const command = new PutEventsCommand({
@@ -63,16 +69,16 @@ module.exports.PublishMessage = async (service, msg) => {
         {
           Source: "products.service",
           DetailType: service,
-          Detail: JSON.stringify(msg),
+          Detail: JSON.stringify({ ...msg, correlationId: cid }),
           EventBusName: EVENT_BUS_NAME,
         },
       ],
     });
 
     await eventBridge.send(command);
-    console.log("✅ Event published to EventBridge");
+    logger.info("EventBridge ACK received", { service, correlationId: cid });
   } catch (err) {
-    console.error("❌ EventBridge publish failed:", err);
+    logger.error("EventBridge publish failed", { service, error: err.message });
   }
 };
 
@@ -86,14 +92,16 @@ module.exports.StartSQSConsumer = async (service) => {
   });
 
   if (!SQS_QUEUE_URL) {
-    console.warn("⚠️ SQS_QUEUE_URL not defined. Skipping SQS consumer.");
+    logger.warn("SQS_QUEUE_URL not defined. Skipping SQS consumer.");
     return;
   }
 
-  console.log("🚀 Starting SQS Consumer...");
+  logger.info("Starting SQS Consumer", { queueUrl: SQS_QUEUE_URL });
 
   const poll = async () => {
     try {
+      logger.info("Polling SQS", { queueUrl: SQS_QUEUE_URL });
+
       const command = new ReceiveMessageCommand({
         QueueUrl: SQS_QUEUE_URL,
         MaxNumberOfMessages: 5,
@@ -104,14 +112,19 @@ module.exports.StartSQSConsumer = async (service) => {
 
       if (response.Messages) {
         for (const message of response.Messages) {
-          console.log("📥 Received Event from SQS");
+          const correlationId = uuidv4();
+
+          logger.info("SQS Message Received", {
+            messageId: message.MessageId,
+            correlationId,
+          });
 
           const event = JSON.parse(message.Body);
 
           // EventBridge wraps actual payload inside "detail"
           const payload = JSON.stringify(event.detail);
 
-          await service.SubscribeEvents(payload);
+          await service.SubscribeEvents(payload, correlationId);
 
           // Delete after successful processing
           await sqs.send(
@@ -121,11 +134,14 @@ module.exports.StartSQSConsumer = async (service) => {
             })
           );
 
-          console.log("🗑️ SQS message deleted");
+          logger.info("SQS Message Deleted", {
+            messageId: message.MessageId,
+            correlationId,
+          });
         }
       }
     } catch (err) {
-      console.error("❌ SQS polling error:", err);
+      logger.error("SQS polling error", { error: err.message });
     }
 
     // Continue polling

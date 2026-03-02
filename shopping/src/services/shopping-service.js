@@ -1,6 +1,7 @@
 const ShoppingRepository = require("../database/repository/shopping-repository");
 const { FormateData, PublishMessage } = require("../utils");
 const { CUSTOMER_SERVICE } = require("../config");
+const logger = require("../logger");
 
 class ShoppingService {
   constructor() {
@@ -20,6 +21,8 @@ class ShoppingService {
       isRemove
     );
 
+    logger.info("Cart Updated", { customerId, productId: product._id, qty, isRemove });
+
     return FormateData(result);
   }
 
@@ -30,6 +33,7 @@ class ShoppingService {
     const order = await this.repository.CreateNewOrder(_id, txnNumber);
 
     if (order) {
+      logger.info("Order Created", { customerId: _id, orderId: order._id });
       const payload = await this.GetOrderPayload(_id, order, "OrderCreated");
       await PublishMessage("OrderCreated", payload);
       return FormateData(order);
@@ -52,11 +56,11 @@ class ShoppingService {
   }
 
   // ================= EVENT HANDLER =================
-  async SubscribeEvents(payload) {
-    console.log("Shopping Service Processing Events");
-
+  async SubscribeEvents(payload, correlationId) {
     const { event, data } = JSON.parse(payload);
     const { userId, product, qty } = data;
+
+    logger.info("Processing Event", { event, correlationId });
 
     switch (event) {
       case "ADD_TO_CART":
@@ -72,6 +76,7 @@ class ShoppingService {
         break;
 
       default:
+        logger.warn("Unknown event received", { event, correlationId });
         break;
     }
   }
@@ -80,9 +85,9 @@ class ShoppingService {
     const { userId } = data;
     const cart = await this.repository.CreateCart(userId);
     if (cart.isNew || cart.items.length === 0) {
-      console.log("🛒 Cart initialized/verified for user:", userId);
+      logger.info("Cart Created", { customerId: userId });
     } else {
-      console.log("⚠️ Cart already exists for user:", userId);
+      logger.warn("Cart already exists for customer", { customerId: userId });
     }
   }
 

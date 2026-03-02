@@ -6,6 +6,8 @@ const {
   PublishMessage,
 } = require("../utils");
 const UserAuth = require("./middlewares/auth");
+const { v4: uuidv4 } = require("uuid");
+const logger = require("../logger");
 
 module.exports = (app) => {
   const service = new ProductService();
@@ -21,8 +23,10 @@ module.exports = (app) => {
   });
 
   app.post("/product/create", async (req, res, next) => {
+    const correlationId = uuidv4();
     const { name, desc, type, unit, price, available, suplier, banner } =
       req.body;
+    logger.info('POST /product/create', { correlationId, name, type });
     // validation
     const { data } = await service.CreateProduct({
       name,
