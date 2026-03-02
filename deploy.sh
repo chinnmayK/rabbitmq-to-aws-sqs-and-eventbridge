@@ -218,6 +218,12 @@ SHOPPING_SERVICE_URL=http://shopping:8003
 EOF
 
 ########################################
+# Log Environment (Masked)
+########################################
+echo "===== Environment Configuration (Masked) ====="
+sed -E 's/=(.*)/=********/' .env | grep -v '^#' || true
+
+########################################
 # Docker Compose
 ########################################
 if docker compose version >/dev/null 2>&1; then
@@ -234,6 +240,9 @@ docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG"
 docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG"
 
 $DOCKER_CMD up -d
+
+echo "===== Container Health Status ====="
+docker ps --format 'table {{.Names}}\t{{.Status}}'
 
 ########################################
 # Wait for Gateway

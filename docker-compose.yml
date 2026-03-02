@@ -31,7 +31,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 40s
+      start_period: 90s
     networks:
       - app-network
 
@@ -58,7 +58,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 40s
+      start_period: 90s
     networks:
       - app-network
 
@@ -82,7 +82,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 40s
+      start_period: 90s
     networks:
       - app-network
 
