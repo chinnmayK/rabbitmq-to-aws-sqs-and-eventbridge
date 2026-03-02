@@ -35,7 +35,7 @@ ORDER_CREATED_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/$
 ORDER_CREATED_PRODUCTS_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-order-created-products-queue"
 
 ########################################
-# Ensure Docker running
+# Ensure Docker is running
 ########################################
 if ! systemctl is-active --quiet docker; then
     systemctl start docker
