@@ -1,5 +1,5 @@
 # ---------- Build Stage ----------
-FROM public.ecr.aws/docker/library/node:18-alpine AS builder
+FROM public.ecr.aws/docker/library/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN npm ci --omit=dev
 COPY . .
 
 # ---------- Runtime Stage ----------
-FROM public.ecr.aws/docker/library/node:18-alpine
+FROM public.ecr.aws/docker/library/node:20-alpine
 
 WORKDIR /app
 

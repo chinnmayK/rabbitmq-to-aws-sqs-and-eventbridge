@@ -8,9 +8,12 @@ const databaseConnection = async () => {
       tls: true,
       tlsCAFile: "/app/global-bundle.pem",
       retryWrites: false,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
 
     logger.info("Connected to DocumentDB");
+
   } catch (err) {
     logger.error("DB Connection Error", { error: err.message });
     process.exit(1);
