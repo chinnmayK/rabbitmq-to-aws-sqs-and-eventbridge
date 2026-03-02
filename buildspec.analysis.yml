@@ -19,7 +19,7 @@ phases:
       - echo "========== INSTALL: sonar-scanner CLI =========="
 
       # Download sonar-scanner CLI
-      - SONAR_SCANNER_VERSION=6.2.1.4610
+      - export SONAR_SCANNER_VERSION=6.2.1.4610
       - wget -q "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip"
       - unzip -q sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
       - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
@@ -40,7 +40,7 @@ phases:
       - echo "========== ANALYSIS: Running sonar-scanner =========="
       - echo "Sonar host -> $SONAR_HOST_URL"
 
-      - SONAR_SCANNER_VERSION=6.2.1.4610
+      - export SONAR_SCANNER_VERSION=6.2.1.4610
       - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
 
       - |
