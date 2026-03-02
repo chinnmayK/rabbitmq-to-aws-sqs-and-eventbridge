@@ -27,10 +27,11 @@ services:
       MONGO_URI: mongodb://${DOCDB_USERNAME}:${DOCDB_PASSWORD}@${DOCDB_ENDPOINT}:27017/customer?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
       SQS_QUEUE_URL: ${ORDER_CREATED_QUEUE_URL}
     healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8001/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
-      interval: 10s
-      timeout: 5s
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/health" ]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 40s
     networks:
       - app-network
 
@@ -53,10 +54,11 @@ services:
       SQS_QUEUE_URL: ${ORDER_CREATED_PRODUCTS_QUEUE_URL}
       REDIS_URL: redis://redis:6379
     healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8002/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
-      interval: 10s
-      timeout: 5s
+      test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 40s
     networks:
       - app-network
 
@@ -76,10 +78,11 @@ services:
       MONGO_URI: mongodb://${DOCDB_USERNAME}:${DOCDB_PASSWORD}@${DOCDB_ENDPOINT}:27017/shopping?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
       SQS_QUEUE_URL: ${CUSTOMER_CREATED_QUEUE_URL}
     healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8003/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" ]
-      interval: 10s
-      timeout: 5s
+      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 40s
     networks:
       - app-network
 
