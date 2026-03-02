@@ -43,13 +43,14 @@ phases:
       - SONAR_SCANNER_VERSION=6.2.1.4610
       - export PATH=$PATH:$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin
 
-      - sonar-scanner \
-          -Dsonar.projectKey=r2sqs-eb \
-          -Dsonar.projectName="r2sqs-eb Microservices" \
-          -Dsonar.sources=customer/src,products/src,shopping/src \
-          -Dsonar.exclusions="**/node_modules/**,**/*.test.js" \
-          -Dsonar.host.url=$SONAR_HOST_URL \
-          -Dsonar.token=$SONAR_TOKEN \
-          -Dsonar.qualitygate.wait=true
+      - |
+        sonar-scanner \
+        -Dsonar.projectKey=r2sqs-eb \
+        -Dsonar.projectName="r2sqs-eb Microservices" \
+        -Dsonar.sources=customer/src,products/src,shopping/src \
+        -Dsonar.exclusions="**/node_modules/**,**/*.test.js" \
+        -Dsonar.host.url=$SONAR_HOST_URL \
+        -Dsonar.token=$SONAR_TOKEN \
+        -Dsonar.qualitygate.wait=true
 
       - echo "========== ANALYSIS COMPLETE — Quality Gate PASSED =========="
