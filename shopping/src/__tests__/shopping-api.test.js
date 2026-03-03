@@ -23,7 +23,22 @@ jest.mock('../../../shared/logger', () => ({
     error: jest.fn(),
     warn: jest.fn(),
 }));
+jest.mock('../../../shared/utils', () => ({
+    GenerateSalt: jest.fn(),
+    GeneratePassword: jest.fn(),
+    ValidatePassword: jest.fn(),
+    GenerateSignature: jest.fn(),
+    ValidateSignature: jest.fn(),
+    FormateData: jest.fn((data) => data),
+}));
+jest.mock('../../../shared/msg-broker', () => ({
+    CreateMessageBroker: jest.fn(() => ({
+        PublishMessage: jest.fn(),
+        StartSQSConsumer: jest.fn(),
+    })),
+}));
 
+const shoppingAPI = require('../../src/api/shopping');
 const ShoppingService = require('../../src/services/shopping-service');
 
 let app;
