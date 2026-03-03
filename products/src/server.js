@@ -2,12 +2,14 @@ const app = require("./app");
 const { PORT } = require("./config");
 const { databaseConnection } = require("./database");
 const { StartSQSConsumer } = require("./utils");
+const { connectRedis } = require("./utils/redis-client");
 const ProductService = require("./services/product-service");
 const logger = require("./logger");
 
 const StartServer = async () => {
     try {
         await databaseConnection();
+        await connectRedis();
 
         const service = new ProductService();
         StartSQSConsumer(service);

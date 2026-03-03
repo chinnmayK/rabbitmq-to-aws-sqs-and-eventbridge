@@ -11,7 +11,10 @@
   "jest": {
     "testEnvironment": "node",
     "collectCoverage": true,
-    "coverageDirectory": "coverage"
+    "coverageDirectory": "coverage",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -33,6 +36,6 @@
   },
   "devDependencies": {
     "jest": "^29.0.3",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.4"
   }
 }

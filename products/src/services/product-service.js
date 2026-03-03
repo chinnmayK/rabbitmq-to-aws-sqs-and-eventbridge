@@ -42,7 +42,7 @@ class ProductService {
     const cacheKey = "products:all";
 
     // 1️⃣ Check cache
-    const cached = await redisClient.get(cacheKey);
+    const cached = await redisClient.client.get(cacheKey);
 
     if (cached) {
       logger.info("Cache Hit", { cacheKey });
@@ -64,7 +64,7 @@ class ProductService {
     };
 
     // 2️⃣ Save to Redis (TTL 60 sec)
-    await redisClient.set(cacheKey, JSON.stringify(response), {
+    await redisClient.client.set(cacheKey, JSON.stringify(response), {
       EX: 60,
     });
 
@@ -101,7 +101,7 @@ class ProductService {
     switch (event) {
       case "OrderCreated":
         // Idempotency: Ignore duplicate OrderCreated events
-        const isProcessed = await redisClient.get(`processed_order:${data.order._id}`);
+        const isProcessed = await redisClient.client.get(`processed_order:${data.order._id}`);
         if (isProcessed) {
           logger.warn("Order already processed by Products Service, skipping", { orderId: data.order._id, correlationId });
           break;
@@ -110,7 +110,7 @@ class ProductService {
         await this.ReduceInventory(data);
 
         // Mark as processed (store for 30 days)
-        await redisClient.set(`processed_order:${data.order._id}`, "true", {
+        await redisClient.client.set(`processed_order:${data.order._id}`, "true", {
           EX: 30 * 24 * 60 * 60
         });
         break;

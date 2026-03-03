@@ -9,6 +9,7 @@ phases:
   install:
     runtime-versions:
       java: corretto17
+      nodejs: 20
     commands:
       - echo "INSTALL sonar-scanner"
       - export SONAR_SCANNER_VERSION=6.2.1.4610

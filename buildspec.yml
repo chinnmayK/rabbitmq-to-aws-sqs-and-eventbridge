@@ -6,6 +6,9 @@ env:
     PROJECT_NAME: r2sqs-eb
 
 phases:
+  install:
+    runtime-versions:
+      nodejs: 20
   pre_build:
     commands:
       - echo "========== PRE-BUILD START =========="
