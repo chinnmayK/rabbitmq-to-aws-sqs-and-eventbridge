@@ -18,13 +18,13 @@ phases:
 
   pre_build:
     commands:
-      - echo "Installing dependencies"
-      - cd customer && npm ci --omit=dev && cd ..
-      - cd products && npm ci --omit=dev && cd ..
-      - cd shopping && npm ci --omit=dev && cd ..
+      - echo "Installing dependencies and running tests for coverage"
+      - cd customer && npm install && npm test && cd ..
+      - cd products && npm install && npm test && cd ..
+      - cd shopping && npm install && npm test && cd ..
 
   build:
     commands:
       - echo "Running SonarQube analysis"
       - echo "Sonar host -> $SONAR_HOST_URL"
-      - $SONAR_SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=r2sqs-eb -Dsonar.projectName="r2sqs-eb Microservices" -Dsonar.sources=customer/src,products/src,shopping/src -Dsonar.exclusions=**/node_modules/**,**/*.test.js -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
+      - $SONAR_SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=r2sqs-eb -Dsonar.projectName="r2sqs-eb Microservices" -Dsonar.sources=customer/src,products/src,shopping/src -Dsonar.exclusions=**/node_modules/**,**/*.test.js -Dsonar.javascript.lcov.reportPaths=customer/coverage/lcov.info,products/coverage/lcov.info,shopping/coverage/lcov.info -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
