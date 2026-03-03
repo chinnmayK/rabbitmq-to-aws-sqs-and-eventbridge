@@ -17,17 +17,22 @@ phases:
       - unzip -q sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
       - export SONAR_SCANNER_HOME=$(pwd)/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64
 
-  pre_build:
+  build:
     commands:
+      - export NODE_ENV=test
       - echo "Starting Redis locally"
       - (which redis-server && redis-server --daemonize yes) || docker run -d -p 6379:6379 redis:alpine || echo "Redis start failed, but continuing..."
-      - echo "Installing dependencies and running tests for coverage"
+      
+      - echo "Running tests in all services to generate coverage"
       - cd customer && npm install && npm test && cd ..
       - cd products && npm install && npm test && cd ..
       - cd shopping && npm install && npm test && cd ..
 
-  build:
-    commands:
+      - echo "Checking coverage existence"
+      - test -f customer/coverage/lcov.info && echo "Customer coverage OK" || echo "Customer coverage MISSING"
+      - test -f products/coverage/lcov.info && echo "Products coverage OK" || echo "Products coverage MISSING"
+      - test -f shopping/coverage/lcov.info && echo "Shopping coverage OK" || echo "Shopping coverage MISSING"
+
       - echo "Running SonarQube analysis"
       - echo "Sonar host -> $SONAR_HOST_URL"
       - $SONAR_SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=r2sqs-eb -Dsonar.projectName="r2sqs-eb Microservices" -Dsonar.sources=customer/src,products/src,shopping/src -Dsonar.exclusions=**/node_modules/**,**/*.test.js -Dsonar.javascript.lcov.reportPaths=customer/coverage/lcov.info,products/coverage/lcov.info,shopping/coverage/lcov.info -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.qualitygate.wait=true
