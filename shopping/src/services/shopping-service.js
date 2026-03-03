@@ -1,7 +1,7 @@
 const ShoppingRepository = require("../database/repository/shopping-repository");
 const { FormateData, PublishMessage } = require("../utils");
 const { CUSTOMER_SERVICE } = require("../config");
-const logger = require("../logger");
+const logger = require("../../../shared/logger");
 
 class ShoppingService {
   constructor() {

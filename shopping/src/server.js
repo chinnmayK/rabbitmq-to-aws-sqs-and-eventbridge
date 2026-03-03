@@ -3,7 +3,7 @@ const { PORT } = require("./config");
 const { databaseConnection } = require("./database");
 const { StartSQSConsumer } = require("./utils");
 const ShoppingService = require("./services/shopping-service");
-const logger = require("./logger");
+const logger = require("../../shared/logger");
 
 const StartServer = async () => {
     try {

@@ -7,7 +7,7 @@ const {
   ValidatePassword,
   PublishMessage,
 } = require("../utils");
-const logger = require("../logger");
+const logger = require("../../../shared/logger");
 
 class CustomerService {
   constructor() {

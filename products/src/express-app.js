@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { products } = require("./api");
+const ErrorHandler = require('../../shared/error-handler');
 
 module.exports = async (app) => {
   app.use(express.json());
@@ -15,4 +16,5 @@ module.exports = async (app) => {
   });
 
   products(app);
+  app.use(ErrorHandler);
 };

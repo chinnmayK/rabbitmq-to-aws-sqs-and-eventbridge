@@ -3,7 +3,7 @@ jest.mock("../utils", () => ({
     FormateData: jest.fn((data) => ({ data })),
     PublishMessage: jest.fn(() => Promise.resolve()),
 }));
-jest.mock("../logger", () => ({
+jest.mock("../../shared/logger", () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),

@@ -1,7 +1,7 @@
 const CustomerService = require('../services/customer-service');
 const UserAuth = require('./middlewares/auth');
 const { v4: uuidv4 } = require('uuid');
-const logger = require('../logger');
+const logger = require("../../../shared/logger");
 
 
 module.exports = (app) => {

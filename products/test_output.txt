@@ -1,0 +1,116 @@
+
+> products@1.0.0 test
+> jest --coverage
+
+PASS src/__tests__/auth.test.js
+FAIL src/services/product-service.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../../shared/logger' from 'src/services/product-service.test.js'
+
+    [0m [90m 18 |[39m   [33mSHOPPING_SERVICE[39m[33m:[39m [32m"shopping"[39m[33m,[39m
+     [90m 19 |[39m }))[33m;[39m
+    [31m[1m>[22m[39m[90m 20 |[39m jest[33m.[39mmock([32m"../../shared/logger"[39m[33m,[39m () [33m=>[39m ({
+     [90m    |[39m      [31m[1m^[22m[39m
+     [90m 21 |[39m   info[33m:[39m jest[33m.[39mfn()[33m,[39m
+     [90m 22 |[39m   warn[33m:[39m jest[33m.[39mfn()[33m,[39m
+     [90m 23 |[39m   error[33m:[39m jest[33m.[39mfn()[33m,[39m[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.mock (src/services/product-service.test.js:20:6)
+
+FAIL src/__tests__/utils.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../../shared/logger' from 'src/utils/index.js'
+
+    Require stack:
+      src/utils/index.js
+      src/__tests__/utils.test.js
+
+    [0m [90m 12 |[39m   [33mSQS_QUEUE_URL[39m[33m,[39m
+     [90m 13 |[39m } [33m=[39m require([32m"../config"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 14 |[39m [36mconst[39m logger [33m=[39m require([32m"../../shared/logger"[39m)[33m;[39m
+     [90m    |[39m                [31m[1m^[22m[39m
+     [90m 15 |[39m
+     [90m 16 |[39m [90m// ------------------[39m
+     [90m 17 |[39m [90m// Utility[39m[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.require (src/utils/index.js:14:16)
+      at Object.require (src/__tests__/utils.test.js:32:15)
+
+PASS src/__tests__/product-repository.test.js
+FAIL src/api/__tests__/products.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../../shared/logger' from 'src/database/connection.js'
+
+    Require stack:
+      src/database/connection.js
+      src/database/index.js
+      src/services/product-service.js
+
+    [0m [90m 1 |[39m [36mconst[39m mongoose [33m=[39m require([32m"mongoose"[39m)[33m;[39m
+     [90m 2 |[39m [36mconst[39m { [33mMONGO_URI[39m } [33m=[39m require([32m"../config"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 3 |[39m [36mconst[39m logger [33m=[39m require([32m"../../shared/logger"[39m)[33m;[39m
+     [90m   |[39m                [31m[1m^[22m[39m
+     [90m 4 |[39m
+     [90m 5 |[39m [36mconst[39m databaseConnection [33m=[39m [36masync[39m () [33m=>[39m {
+     [90m 6 |[39m   [36mtry[39m {[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.require (src/database/connection.js:3:16)
+      at Object.require (src/database/index.js:1:32)
+      at Object.require (src/services/product-service.js:1:31)
+      at Object.require (src/api/__tests__/products.test.js:6:24)
+
+FAIL src/__tests__/health.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../../shared/logger' from 'src/database/connection.js'
+
+    Require stack:
+      src/database/connection.js
+      src/database/index.js
+      src/services/product-service.js
+      src/api/products.js
+      src/api/index.js
+      src/express-app.js
+      src/app.js
+      src/__tests__/health.test.js
+
+    [0m [90m 1 |[39m [36mconst[39m mongoose [33m=[39m require([32m"mongoose"[39m)[33m;[39m
+     [90m 2 |[39m [36mconst[39m { [33mMONGO_URI[39m } [33m=[39m require([32m"../config"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 3 |[39m [36mconst[39m logger [33m=[39m require([32m"../../shared/logger"[39m)[33m;[39m
+     [90m   |[39m                [31m[1m^[22m[39m
+     [90m 4 |[39m
+     [90m 5 |[39m [36mconst[39m databaseConnection [33m=[39m [36masync[39m () [33m=>[39m {
+     [90m 6 |[39m   [36mtry[39m {[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.require (src/database/connection.js:3:16)
+      at Object.require (src/database/index.js:1:32)
+      at Object.require (src/services/product-service.js:1:31)
+      at Object.require (src/api/products.js:2:24)
+      at Object.require (src/api/index.js:3:15)
+      at Object.require (src/express-app.js:3:22)
+      at Object.require (src/app.js:2:20)
+      at Object.require (src/__tests__/health.test.js:2:13)
+
+------------------------|---------|----------|---------|---------|-------------------
+File                    | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+------------------------|---------|----------|---------|---------|-------------------
+All files               |   72.97 |       50 |      75 |   74.28 |                   
+ api/middlewares        |     100 |      100 |     100 |     100 |                   
+  auth.js               |     100 |      100 |     100 |     100 |                   
+ database/repository    |   84.21 |      100 |    87.5 |   83.33 |                   
+  product-repository.js |   84.21 |      100 |    87.5 |   83.33 | 10-17             
+ utils                  |   41.66 |       30 |   33.33 |   45.45 |                   
+  redis-client.js       |   41.66 |       30 |   33.33 |   45.45 | 8-16,22           
+------------------------|---------|----------|---------|---------|-------------------
+Test Suites: 4 failed, 2 passed, 6 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        1.675 s, estimated 3 s
+Ran all test suites.

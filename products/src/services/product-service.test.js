@@ -17,7 +17,7 @@ jest.mock("../config", () => ({
   CUSTOMER_SERVICE: "customer",
   SHOPPING_SERVICE: "shopping",
 }));
-jest.mock("../logger", () => ({
+jest.mock("../../../shared/logger", () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),

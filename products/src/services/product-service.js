@@ -2,7 +2,7 @@ const { ProductRepository } = require("../database");
 const { FormateData, PublishMessage } = require("../utils");
 const { CUSTOMER_SERVICE, SHOPPING_SERVICE } = require("../config");
 const redisClient = require("../utils/redis-client");
-const logger = require("../logger");
+const logger = require("../../../shared/logger");
 
 class ProductService {
   constructor() {

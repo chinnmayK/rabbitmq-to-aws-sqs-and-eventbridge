@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { shopping, appEvents } = require('./api');
+const ErrorHandler = require('../../shared/error-handler');
 module.exports = async (app) => {
 
     app.use(express.json());
@@ -21,5 +22,5 @@ module.exports = async (app) => {
 
     shopping(app);
     // error handling
-
+    app.use(ErrorHandler);
 }

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { MONGO_URI } = require("../config");
-const logger = require("../logger");
+const logger = require("../../../shared/logger");
 
 const databaseConnection = async () => {
   try {

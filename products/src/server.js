@@ -4,7 +4,7 @@ const { databaseConnection } = require("./database");
 const { StartSQSConsumer } = require("./utils");
 const { connectRedis } = require("./utils/redis-client");
 const ProductService = require("./services/product-service");
-const logger = require("./logger");
+const logger = require("../../shared/logger");
 
 const StartServer = async () => {
     try {

@@ -3,7 +3,7 @@ const { PublishMessage } = require("../utils");
 const UserAuth = require("./middlewares/auth");
 const { CUSTOMER_SERVICE } = require("../config");
 const { v4: uuidv4 } = require("uuid");
-const logger = require("../logger");
+const logger = require("../../../shared/logger");
 
 module.exports = async (app) => {
   const service = new ShoppingService();
