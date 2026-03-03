@@ -1,0 +1,79 @@
+
+> shopping@1.0.0 test
+> jest --coverage src/api/__tests__/shopping.test.js
+
+{"correlationId":"75de50ed-3f1b-45ee-a0df-bde6766300d3","customerId":"user-123","level":"info","message":"POST /order","service":"shopping-service","timestamp":"2026-03-03T08:26:28.789Z","txnNumber":"txn-123"}
+{"correlationId":"8e8dbf1e-cadf-4500-9af1-438517a1ddd1","customerId":"user-123","level":"info","message":"POST /order","service":"shopping-service","timestamp":"2026-03-03T08:26:28.794Z","txnNumber":"txn-123"}
+FAIL src/api/__tests__/shopping.test.js
+  Shopping API
+    √ should return healthy on /health (22 ms)
+    √ should place an order on POST /order (14 ms)
+    √ should handle error on POST /order (4 ms)
+    √ should get orders on GET /orders (3 ms)
+    √ should handle error on GET /orders (4 ms)
+    × should get order details on GET /order/:id (6 ms)
+    × should handle error on GET /order/:id (3 ms)
+    √ should get cart on GET /cart (3 ms)
+    √ should handle error on GET /cart (5 ms)
+    √ should return whoami message on /whoami (4 ms)
+
+  ● Shopping API › should get order details on GET /order/:id
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 404
+
+      77 |         const res = await request(app).get("/order/order-1");
+      78 |
+    > 79 |         expect(res.statusCode).toBe(200);
+         |                                ^
+      80 |         expect(mockService.GetOrderDetails).toHaveBeenCalledWith("user-123", "order-1");
+      81 |     });
+      82 |
+
+      at Object.toBe (src/api/__tests__/shopping.test.js:79:32)
+
+  ● Shopping API › should handle error on GET /order/:id
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 500
+    Received: 404
+
+      85 |
+      86 |         const res = await request(app).get("/order/order-1");
+    > 87 |         expect(res.statusCode).toBe(500);
+         |                                ^
+      88 |     });
+      89 |
+      90 |     it("should get cart on GET /cart", async () => {
+
+      at Object.toBe (src/api/__tests__/shopping.test.js:87:32)
+
+-------------------------|---------|----------|---------|---------|--------------------------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                    
+-------------------------|---------|----------|---------|---------|--------------------------------------
+All files                |   34.74 |    14.81 |   17.64 |   35.23 |                                      
+ src                     |     100 |      100 |     100 |     100 |                                      
+  logger.js              |     100 |      100 |     100 |     100 |                                      
+ src/api                 |   74.46 |      100 |      75 |   74.46 |                                      
+  shopping.js            |   74.46 |      100 |      75 |   74.46 | 42-55,61-74                          
+ src/config              |     100 |      100 |     100 |     100 |                                      
+  index.js               |     100 |      100 |     100 |     100 |                                      
+ src/database/models     |      90 |      100 |       0 |      90 |                                      
+  Cart.js                |     100 |      100 |     100 |     100 |                                      
+  Order.js               |      80 |      100 |       0 |      80 | 29                                   
+  index.js               |     100 |      100 |     100 |     100 |                                      
+ src/database/repository |    9.52 |        0 |       0 |    9.52 |                                      
+  shopping-repository.js |    9.52 |        0 |       0 |    9.52 | 10-121                               
+ src/services            |   11.11 |        0 |       0 |   11.36 |                                      
+  shopping-service.js    |   11.11 |        0 |       0 |   11.36 | 8-104                                
+ src/utils               |      25 |        0 |       0 |    25.8 |                                      
+  index.js               |      25 |        0 |       0 |    25.8 | 19,23,27,31,35-43,48-49,60-84,93-156 
+-------------------------|---------|----------|---------|---------|--------------------------------------
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 8 passed, 10 total
+Snapshots:   0 total
+Time:        1.143 s, estimated 2 s
+Ran all test suites matching /src\\api\\__tests__\\shopping.test.js/i.
