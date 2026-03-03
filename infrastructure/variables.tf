@@ -18,18 +18,6 @@ variable "email" {
   type        = string
 }
 
-variable "docdb_username" {
-  description = "Master username for DocumentDB"
-  type        = string
-  default     = "docdbadmin"
-}
-
-variable "docdb_password" {
-  description = "Master password for DocumentDB — set via TF_VAR_docdb_password, never hardcoded"
-  type        = string
-  sensitive   = true
-}
-
 variable "sonar_host_url" {
   description = "SonarQube host URL for CodeBuild analysis (e.g. http://EC2_IP:9000)"
   type        = string

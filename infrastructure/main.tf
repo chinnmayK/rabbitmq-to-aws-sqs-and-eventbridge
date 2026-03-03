@@ -1,3 +1,8 @@
+resource "random_password" "mongo_password" {
+  length  = 20
+  special = false
+}
+
 ########################################################
 # NETWORK MODULE
 ########################################################
@@ -33,6 +38,7 @@ module "secrets" {
   source         = "./modules/secrets"
   project_name   = var.project_name
   redis_endpoint = module.network.redis_endpoint
+  mongo_password = random_password.mongo_password.result
 }
 
 ########################################################
@@ -93,12 +99,11 @@ module "documentdb" {
   project_name       = var.project_name
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnet_ids
-  ec2_sg_id          = module.network.security_group_id
-  docdb_username     = var.docdb_username
-  docdb_password     = module.secrets.mongo_password
+  ec2_sg_id          = module.ec2.security_group_id
+  docdb_username     = "docdbadmin"
+  docdb_password     = random_password.mongo_password.result
 
   depends_on = [
-    module.network,
-    module.secrets
+    module.network
   ]
 }

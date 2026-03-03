@@ -26,5 +26,4 @@ variable "docdb_username" {
 variable "docdb_password" {
   description = "Master password for DocumentDB"
   type        = string
-  sensitive   = true
 }

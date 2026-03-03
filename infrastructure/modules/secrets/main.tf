@@ -2,11 +2,6 @@
 # RANDOM PASSWORDS
 ############################################################
 
-resource "random_password" "mongo_password" {
-  length  = 20
-  special = false
-}
-
 resource "random_password" "jwt_secret" {
   length  = 32
   special = false
@@ -25,8 +20,8 @@ resource "aws_secretsmanager_secret_version" "mongo_secret_value" {
   secret_id = aws_secretsmanager_secret.mongo_secret.id
 
   secret_string = jsonencode({
-    username = "admin"
-    password = random_password.mongo_password.result
+    username = "docdbadmin"
+    password = var.mongo_password
   })
 }
 
