@@ -2,12 +2,16 @@ const request = require('supertest');
 const express = require('express');
 
 // Mock dependencies
-jest.mock('../../src/services/shopping-service', () => ({
-    PlaceOrder: jest.fn(),
-    GetOrders: jest.fn(),
-    GetCart: jest.fn(),
-    ManageCart: jest.fn(),
-}));
+jest.mock('../../src/services/shopping-service', () => {
+    return jest.fn().mockImplementation(() => {
+        return {
+            PlaceOrder: jest.fn(),
+            GetOrders: jest.fn(),
+            GetCart: jest.fn(),
+            ManageCart: jest.fn(),
+        };
+    });
+});
 
 jest.mock('../../src/api/middlewares/auth', () => jest.fn((req, res, next) => {
     req.user = { _id: 'user-123' };
@@ -20,18 +24,17 @@ jest.mock('../../../shared/logger', () => ({
     warn: jest.fn(),
 }));
 
-const shoppingAPI = require('../../src/api/shopping');
 const ShoppingService = require('../../src/services/shopping-service');
 
 let app;
-const service = require('../../src/services/shopping-service');
+let service;
 
 beforeEach(async () => {
     jest.clearAllMocks();
     app = express();
     app.use(express.json());
     await shoppingAPI(app);
-    // service = ShoppingService.mock.instances[0];
+    service = ShoppingService.mock.instances[0];
 });
 
 describe('Shopping API', () => {

@@ -2,14 +2,18 @@ const request = require('supertest');
 const express = require('express');
 
 // Mock dependencies
-jest.mock('../../src/services/customer-service', () => ({
-    SignUp: jest.fn(),
-    SignIn: jest.fn(),
-    AddNewAddress: jest.fn(),
-    GetProfile: jest.fn(),
-    GetShopingDetails: jest.fn(),
-    GetWishList: jest.fn(),
-}));
+jest.mock('../../src/services/customer-service', () => {
+    return jest.fn().mockImplementation(() => {
+        return {
+            SignUp: jest.fn(),
+            SignIn: jest.fn(),
+            AddNewAddress: jest.fn(),
+            GetProfile: jest.fn(),
+            GetShopingDetails: jest.fn(),
+            GetWishList: jest.fn(),
+        };
+    });
+});
 jest.mock('../../src/api/middlewares/auth', () => jest.fn((req, res, next) => {
     req.user = { _id: 'user-123' };
     next();
@@ -19,18 +23,18 @@ jest.mock('../../../shared/logger', () => ({
     error: jest.fn(),
 }));
 
-const customerAPI = require('../../src/api/customer');
 const CustomerService = require('../../src/services/customer-service');
 
 let app;
-const service = require('../../src/services/customer-service');
+let service;
 
 beforeEach(() => {
     jest.clearAllMocks();
     app = express();
     app.use(express.json());
     customerAPI(app);
-    // No longer need to grab instance from mock
+    // Grab the mock instance created inside the API
+    service = CustomerService.mock.instances[0];
 
 });
 
