@@ -1,0 +1,41 @@
+
+> customer@1.0.0 test
+> jest --coverage
+
+PASS src/__tests__/auth.test.js
+PASS src/__tests__/customer-repository.test.js
+PASS src/services/customer-service.test.js
+PASS src/__tests__/customer-api.test.js
+PASS src/__tests__/health.test.js (8.831 s)
+-------------------------|---------|----------|---------|---------|-------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------------|---------|----------|---------|---------|-------------------
+All files                |   93.29 |      100 |   84.21 |   93.04 |                   
+ src                     |   94.73 |      100 |   66.66 |   94.73 |                   
+  app.js                 |     100 |      100 |     100 |     100 |                   
+  express-app.js         |   91.66 |      100 |      50 |   91.66 | 14                
+ src/api                 |   85.71 |      100 |   81.81 |   85.71 |                   
+  app-events.js          |   22.22 |      100 |       0 |   22.22 | 5-15              
+  customer.js            |     100 |      100 |     100 |     100 |                   
+  index.js               |     100 |      100 |     100 |     100 |                   
+ src/api/middlewares     |     100 |      100 |     100 |     100 |                   
+  auth.js                |     100 |      100 |     100 |     100 |                   
+ src/config              |     100 |      100 |     100 |     100 |                   
+  index.js               |     100 |      100 |     100 |     100 |                   
+ src/database/models     |      75 |      100 |       0 |      75 |                   
+  Address.js             |     100 |      100 |     100 |     100 |                   
+  Customer.js            |   57.14 |      100 |       0 |   57.14 | 34-36             
+  index.js               |     100 |      100 |     100 |     100 |                   
+ src/database/repository |     100 |      100 |     100 |     100 |                   
+  customer-repository.js |     100 |      100 |     100 |     100 |                   
+ src/services            |     100 |      100 |     100 |     100 |                   
+  customer-service.js    |     100 |      100 |     100 |     100 |                   
+ src/utils               |   71.42 |      100 |       0 |   71.42 |                   
+  index.js               |   71.42 |      100 |       0 |   71.42 | 23-24             
+-------------------------|---------|----------|---------|---------|-------------------
+
+Test Suites: 5 passed, 5 total
+Tests:       44 passed, 44 total
+Snapshots:   0 total
+Time:        9.169 s
+Ran all test suites.

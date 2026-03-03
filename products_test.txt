@@ -1,0 +1,6 @@
+
+> products@1.0.0 test
+> jest --coverage
+
+PASS src/__tests__/auth.test.js
+PASS src/services/product-service.test.js
