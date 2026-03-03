@@ -1,0 +1,67 @@
+
+> products@1.0.0 test
+> jest --coverage
+
+PASS src/__tests__/auth.test.js
+PASS src/services/product-service.test.js
+PASS src/__tests__/redis-client.test.js
+PASS src/__tests__/utils-index.test.js
+PASS src/__tests__/product-repository.test.js
+PASS src/__tests__/utils.test.js
+  ● Console
+
+    console.log
+      {"correlationId":"corr-1","event":"Test","level":"info","message":"Publishing Event","service":"service","timestamp":"2026-03-03T13:19:47.153Z"}
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      {"error":"A dynamic import callback was invoked without --experimental-vm-modules","level":"error","message":"EventBridge publish failed","service":"service","timestamp":"2026-03-03T13:19:47.169Z"}
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+PASS src/__tests__/products-api.test.js
+PASS src/__tests__/health.test.js
+PASS src/api/__tests__/products.test.js
+  ● Console
+
+    console.log
+      {"correlationId":"c7ac53bf-39f8-416e-9173-8863e6ff3155","level":"info","message":"POST /product/create","name":"Test","service":"unknown-service","timestamp":"2026-03-03T13:19:47.666Z"}
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:87:23)
+
+-------------------------|---------|----------|---------|---------|--------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s  
+-------------------------|---------|----------|---------|---------|--------------------
+All files                |   93.04 |    97.29 |   91.66 |   92.95 |                    
+ src                     |   94.44 |      100 |   66.66 |   94.44 |                    
+  app.js                 |     100 |      100 |     100 |     100 |                    
+  express-app.js         |    90.9 |      100 |      50 |    90.9 | 11                 
+ src/api                 |   88.23 |      100 |    87.5 |   88.23 |                    
+  app-events.js          |   16.66 |      100 |       0 |   16.66 | 6-13               
+  index.js               |     100 |      100 |     100 |     100 |                    
+  products.js            |   93.58 |      100 |     100 |   93.58 | 59,103,120,142,165 
+ src/api/middlewares     |     100 |      100 |     100 |     100 |                    
+  auth.js                |     100 |      100 |     100 |     100 |                    
+ src/config              |     100 |      100 |     100 |     100 |                    
+  index.js               |     100 |      100 |     100 |     100 |                    
+ src/database            |   61.53 |      100 |       0 |   61.53 |                    
+  connection.js          |      50 |      100 |       0 |      50 | 6-19               
+  index.js               |     100 |      100 |     100 |     100 |                    
+ src/database/models     |     100 |      100 |     100 |     100 |                    
+  Product.js             |     100 |      100 |     100 |     100 |                    
+  index.js               |     100 |      100 |     100 |     100 |                    
+ src/database/repository |     100 |      100 |     100 |     100 |                    
+  product-repository.js  |     100 |      100 |     100 |     100 |                    
+ src/services            |     100 |      100 |     100 |     100 |                    
+  product-service.js     |     100 |      100 |     100 |     100 |                    
+ src/utils               |     100 |       90 |     100 |     100 |                    
+  index.js               |     100 |      100 |     100 |     100 |                    
+  redis-client.js        |     100 |       90 |     100 |     100 | 15                 
+-------------------------|---------|----------|---------|---------|--------------------
+
+Test Suites: 9 passed, 9 total
+Tests:       76 passed, 76 total
+Snapshots:   0 total
+Time:        3.408 s
+Ran all test suites.
