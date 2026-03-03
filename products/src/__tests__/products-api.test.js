@@ -2,17 +2,13 @@ const request = require('supertest');
 const express = require('express');
 
 // Mock dependencies
-jest.mock('../../src/services/product-service', () => {
-    return jest.fn().mockImplementation(() => {
-        return {
-            CreateProduct: jest.fn(),
-            GetProducts: jest.fn(),
-            GetProductDescription: jest.fn(),
-            GetProductsByCategory: jest.fn(),
-            GetSelectedProducts: jest.fn(),
-        };
-    });
-});
+jest.mock('../../src/services/product-service', () => ({
+    CreateProduct: jest.fn(),
+    GetProducts: jest.fn(),
+    GetProductDescription: jest.fn(),
+    GetProductsByCategory: jest.fn(),
+    GetSelectedProducts: jest.fn(),
+}));
 
 jest.mock('../../src/api/middlewares/auth', () => jest.fn((req, res, next) => {
     req.user = { _id: 'user-123' };
@@ -29,14 +25,14 @@ const productsAPI = require('../../src/api/products');
 const ProductService = require('../../src/services/product-service');
 
 let app;
-let service;
+const service = require('../../src/services/product-service');
 
 beforeEach(() => {
     jest.clearAllMocks();
     app = express();
     app.use(express.json());
     productsAPI(app);
-    service = ProductService.mock.instances[0];
+    // service = ProductService.mock.instances[0];
 });
 
 describe('Products API', () => {
