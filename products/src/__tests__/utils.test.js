@@ -1,13 +1,4 @@
-jest.mock("bcryptjs", () => ({
-    genSalt: jest.fn().mockResolvedValue("salt"),
-    hash: jest.fn().mockResolvedValue("hashed"),
-    compare: jest.fn().mockResolvedValue(true),
-}));
-
-jest.mock("jsonwebtoken", () => ({
-    sign: jest.fn().mockReturnValue("token"),
-    verify: jest.fn().mockReturnValue({ _id: "user-123" }),
-}));
+// Removed manual mocks for bcryptjs and jsonwebtoken to test real shared implementation
 
 jest.mock("@aws-sdk/client-eventbridge", () => ({
     EventBridgeClient: jest.fn(() => ({ send: jest.fn() })),
@@ -39,26 +30,33 @@ describe("Utils", () => {
     describe("Auth & Crypto Utilities", () => {
         it("should generate salt", async () => {
             const salt = await utils.GenerateSalt();
-            expect(salt).toBe("salt");
+            expect(typeof salt).toBe("string");
+            expect(salt.length).toBeGreaterThan(10);
         });
 
         it("should generate password", async () => {
-            const hash = await utils.GeneratePassword("pass", "salt");
-            expect(hash).toBe("hashed");
+            const salt = await utils.GenerateSalt();
+            const hash = await utils.GeneratePassword("pass", salt);
+            expect(typeof hash).toBe("string");
+            expect(hash.length).toBeGreaterThan(20);
         });
 
         it("should validate password", async () => {
-            const isValid = await utils.ValidatePassword("pass", "hashed");
+            const salt = await utils.GenerateSalt();
+            const hashed = await utils.GeneratePassword("pass", salt);
+            const isValid = await utils.ValidatePassword("pass", hashed, salt);
             expect(isValid).toBe(true);
         });
 
         it("should generate signature", async () => {
             const token = await utils.GenerateSignature({ _id: "user-123" });
-            expect(token).toBe("token");
+            expect(typeof token).toBe("string");
+            expect(token.split('.')).toHaveLength(3);
         });
 
         it("should validate valid signature", async () => {
-            const req = { get: jest.fn().mockReturnValue("Bearer token") };
+            const token = await utils.GenerateSignature({ _id: "user-123" });
+            const req = { get: jest.fn().mockReturnValue(`Bearer ${token}`) };
             const isValid = await utils.ValidateSignature(req);
             expect(isValid).toBe(true);
             expect(req.user._id).toBe("user-123");
@@ -71,9 +69,7 @@ describe("Utils", () => {
         });
 
         it("should handle error in signature validation", async () => {
-            const req = { get: jest.fn().mockReturnValue("Bearer bad") };
-            const jwt = require("jsonwebtoken");
-            jwt.verify.mockImplementationOnce(() => { throw new Error("bad token"); });
+            const req = { get: jest.fn().mockReturnValue("Bearer bad-token-value") };
             const isValid = await utils.ValidateSignature(req);
             expect(isValid).toBe(false);
         });

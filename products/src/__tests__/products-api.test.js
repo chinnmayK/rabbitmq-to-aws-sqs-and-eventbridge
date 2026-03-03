@@ -1,20 +1,16 @@
 const request = require('supertest');
 const express = require('express');
 
-// Mock dependencies
-jest.mock('../../src/services/product-service', () => {
-    return jest.fn().mockImplementation(() => {
-        return {
-            CreateProduct: jest.fn(),
-            GetProducts: jest.fn(),
-            GetProductDescription: jest.fn(),
-            GetProductsByCategory: jest.fn(),
-            GetSelectedProducts: jest.fn(),
-        };
-    });
-});
+// ─── Mocks ──────────────────────────────────────────────────────────────────
+const mockService = {
+    CreateProduct: jest.fn(),
+    GetProducts: jest.fn(),
+    GetProductDescription: jest.fn(),
+    GetProductsByCategory: jest.fn(),
+    GetSelectedProducts: jest.fn(),
+};
 
-jest.mock('../../src/api/middlewares/auth', () => jest.fn((req, res, next) => {
+jest.mock('../api/middlewares/auth', () => jest.fn((req, res, next) => {
     req.user = { _id: 'user-123' };
     next();
 }));
@@ -24,39 +20,28 @@ jest.mock('../../../shared/logger', () => ({
     error: jest.fn(),
     warn: jest.fn(),
 }));
-jest.mock('../../../shared/utils', () => ({
-    GenerateSalt: jest.fn(),
-    GeneratePassword: jest.fn(),
-    ValidatePassword: jest.fn(),
-    GenerateSignature: jest.fn(),
-    ValidateSignature: jest.fn(),
-    FormateData: jest.fn((data) => data),
-}));
-jest.mock('../../../shared/msg-broker', () => ({
-    CreateMessageBroker: jest.fn(() => ({
-        PublishMessage: jest.fn(),
-        StartSQSConsumer: jest.fn(),
-    })),
-}));
 
-const productsAPI = require('../../src/api/products');
-const ProductService = require('../../src/services/product-service');
+jest.mock('../services/product-service', () => {
+    return jest.fn().mockImplementation(() => mockService);
+});
+
+// ─── Setup ───────────────────────────────────────────────────────────────────
+const productsAPI = require('../api/products');
 
 let app;
-let service;
 
 beforeEach(() => {
     jest.clearAllMocks();
     app = express();
     app.use(express.json());
-    productsAPI(app);
-    service = ProductService.mock.instances[0];
+    productsAPI(app, mockService);
 });
 
+// ─── Tests ───────────────────────────────────────────────────────────────────
 describe('Products API', () => {
     describe('POST /product/create', () => {
         it('should return 200 and created product', async () => {
-            service.CreateProduct.mockResolvedValue({ data: { _id: '123', name: 'Product' } });
+            mockService.CreateProduct.mockResolvedValue({ data: { _id: '123', name: 'Product' } });
 
             const response = await request(app)
                 .post('/product/create')
@@ -69,7 +54,7 @@ describe('Products API', () => {
 
     describe('GET /category/:type', () => {
         it('should return products by category', async () => {
-            service.GetProductsByCategory.mockResolvedValue({ data: [{ _id: '123' }] });
+            mockService.GetProductsByCategory.mockResolvedValue({ data: [{ _id: '123' }] });
 
             const response = await request(app).get('/category/electronics');
 
@@ -80,7 +65,7 @@ describe('Products API', () => {
 
     describe('GET /:id', () => {
         it('should return product description', async () => {
-            service.GetProductDescription.mockResolvedValue({ data: { _id: '123' } });
+            mockService.GetProductDescription.mockResolvedValue({ data: { _id: '123' } });
 
             const response = await request(app).get('/123');
 
@@ -91,7 +76,7 @@ describe('Products API', () => {
 
     describe('POST /ids', () => {
         it('should return selected products', async () => {
-            service.GetSelectedProducts.mockResolvedValue({ data: [{ _id: '123' }] });
+            mockService.GetSelectedProducts.mockResolvedValue({ data: [{ _id: '123' }] });
 
             const response = await request(app).post('/ids').send({ ids: ['123'] });
 
@@ -102,7 +87,7 @@ describe('Products API', () => {
 
     describe('GET /', () => {
         it('should return all products', async () => {
-            service.GetProducts.mockResolvedValue({ data: { products: [] } });
+            mockService.GetProducts.mockResolvedValue({ data: { products: [] } });
 
             const response = await request(app).get('/');
 

@@ -1,0 +1,16 @@
+PASS src/__tests__/shopping-api.test.js
+  Shopping API
+    POST /order
+      √ should return 200 and created order (40 ms)
+    GET /orders
+      √ should return all orders (5 ms)
+    GET /cart
+      √ should return cart data (3 ms)
+    POST /cart
+      √ should update cart and return 200 (3 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        0.797 s, estimated 2 s
+Ran all test suites matching /src\\__tests__\\shopping-api.test.js/i.

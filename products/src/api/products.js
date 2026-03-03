@@ -9,8 +9,8 @@ const UserAuth = require("./middlewares/auth");
 const { v4: uuidv4 } = require("uuid");
 const logger = require("../../../shared/logger");
 
-module.exports = (app) => {
-  const service = new ProductService();
+module.exports = (app, serviceInstance) => {
+  const service = serviceInstance || new ProductService();
 
   app.get('/health', (req, res) => {
     return res.status(200).json({ status: 'Products service healthy' });
@@ -84,8 +84,8 @@ module.exports = (app) => {
 
   app.post("/ids", async (req, res, next) => {
     const { ids } = req.body;
-    const products = await service.GetSelectedProducts(ids);
-    return res.status(200).json(products);
+    const { data } = await service.GetSelectedProducts(ids);
+    return res.status(200).json(data);
   });
 
   app.put("/wishlist", UserAuth, async (req, res, next) => {

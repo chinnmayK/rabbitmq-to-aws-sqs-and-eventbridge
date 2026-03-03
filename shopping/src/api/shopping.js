@@ -5,8 +5,8 @@ const { CUSTOMER_SERVICE } = require("../config");
 const { v4: uuidv4 } = require("uuid");
 const logger = require("../../../shared/logger");
 
-module.exports = async (app) => {
-  const service = new ShoppingService();
+module.exports = async (app, serviceInstance) => {
+  const service = serviceInstance || new ShoppingService();
 
   // ================= PLACE ORDER =================
   app.post("/order", UserAuth, async (req, res, next) => {

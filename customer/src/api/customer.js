@@ -4,9 +4,9 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require("../../../shared/logger");
 
 
-module.exports = (app) => {
+module.exports = (app, serviceInstance) => {
 
-    const service = new CustomerService();
+    const service = serviceInstance || new CustomerService();
 
 
     app.post('/signup', async (req, res, next) => {

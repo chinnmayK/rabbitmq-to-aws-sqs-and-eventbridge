@@ -116,7 +116,7 @@ describe("Products API", () => {
     });
 
     it("should get selected products by ids", async () => {
-        mockService.GetSelectedProducts.mockResolvedValue([{ _id: "prod-1" }]);
+        mockService.GetSelectedProducts.mockResolvedValue({ data: [{ _id: "prod-1" }] });
 
         const res = await request(app)
             .post("/ids")
@@ -168,7 +168,7 @@ describe("Products API", () => {
     });
 
     it("should get all products on GET /", async () => {
-        mockService.GetProducts.mockResolvedValue({ data: [{ _id: "prod-1" }] });
+        mockService.GetProducts.mockResolvedValue({ data: { products: [{ _id: "prod-1" }] } });
 
         const res = await request(app).get("/");
 
