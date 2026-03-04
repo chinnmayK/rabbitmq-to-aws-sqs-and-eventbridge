@@ -3,7 +3,7 @@ const { PORT } = require("./config");
 const { databaseConnection } = require("./database");
 const { StartSQSConsumer } = require("./utils");
 const CustomerService = require("./services/customer-service");
-const logger = require("../shared/logger");
+const logger = require("../../shared/logger");
 
 const StartServer = async () => {
     app.listen(PORT, "0.0.0.0", () => {

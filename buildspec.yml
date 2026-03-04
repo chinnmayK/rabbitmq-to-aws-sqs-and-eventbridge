@@ -41,9 +41,9 @@ phases:
       - echo "Build started on $(date)"
 
       # Build Docker images
-      - docker build -t $PROJECT_NAME-customer:$IMAGE_TAG ./customer
-      - docker build -t $PROJECT_NAME-products:$IMAGE_TAG ./products
-      - docker build -t $PROJECT_NAME-shopping:$IMAGE_TAG ./shopping
+      - docker build -f customer/Dockerfile -t $PROJECT_NAME-customer:$IMAGE_TAG .
+      - docker build -f products/Dockerfile -t $PROJECT_NAME-products:$IMAGE_TAG .
+      - docker build -f shopping/Dockerfile -t $PROJECT_NAME-shopping:$IMAGE_TAG .
       - docker build -t $PROJECT_NAME-gateway:$IMAGE_TAG ./gateway
 
       # Tag images for ECR

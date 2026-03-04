@@ -1,0 +1,23 @@
+# Ignore version control
+.git
+.gitattributes
+
+# Ignore node_modules (each service installs its own in the builder stage)
+node_modules
+customer/node_modules
+products/node_modules
+shopping/node_modules
+gateway/node_modules
+
+# Ignore infrastructure and CI files
+infrastructure
+__Episodes
+bootstrap
+
+# Ignore sensitive/unnecessary files
+*.pem
+*.tfstate
+*.txt
+.env
+sonar-project.properties
+sonar-setup.sh
