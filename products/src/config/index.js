@@ -10,4 +10,5 @@ module.exports = {
   AWS_REGION: process.env.AWS_REGION || "ap-south-1",
   PRODUCTS_SERVICE: "products_service",
   SQS_QUEUE_URL: process.env.SQS_QUEUE_URL,
+  CACHE_INVALIDATED_QUEUE_URL: process.env.CACHE_INVALIDATED_QUEUE_URL,
 };

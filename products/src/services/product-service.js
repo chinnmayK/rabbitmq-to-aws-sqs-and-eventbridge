@@ -113,6 +113,17 @@ class ProductService {
         await redisClient.client.set(`processed_order:${data.order._id}`, "true", {
           EX: 30 * 24 * 60 * 60
         });
+
+        // Invalidate products cache so next GET re-fetches from DB
+        await PublishMessage("CacheInvalidated", {
+          event: "CacheInvalidated",
+          data: { cacheKey: "products:all" }
+        });
+        logger.info("CacheInvalidated event published", { cacheKey: "products:all" });
+        break;
+      case "CacheInvalidated":
+        await redisClient.client.del(data.cacheKey);
+        logger.info("Cache Cleared", { key: data.cacheKey });
         break;
       default:
         logger.warn("Unknown event received", { event, correlationId });

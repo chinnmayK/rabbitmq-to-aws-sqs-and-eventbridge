@@ -33,6 +33,7 @@ IMAGE_TAG="${IMAGE_TAG:-latest}"
 CUSTOMER_CREATED_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-customer-created-queue"
 ORDER_CREATED_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-order-created-queue"
 ORDER_CREATED_PRODUCTS_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-order-created-products-queue"
+CACHE_INVALIDATED_QUEUE_URL="https://sqs.${AWS_REGION}.amazonaws.com/${ACCOUNT_ID}/${PROJECT_NAME}-cache-invalidated-queue"
 
 ########################################
 # Ensure Docker is running
@@ -211,6 +212,7 @@ EVENT_BUS_NAME=$EVENT_BUS_NAME
 CUSTOMER_CREATED_QUEUE_URL=$CUSTOMER_CREATED_QUEUE_URL
 ORDER_CREATED_QUEUE_URL=$ORDER_CREATED_QUEUE_URL
 ORDER_CREATED_PRODUCTS_QUEUE_URL=$ORDER_CREATED_PRODUCTS_QUEUE_URL
+CACHE_INVALIDATED_QUEUE_URL=$CACHE_INVALIDATED_QUEUE_URL
 
 # Service routing
 CUSTOMER_SERVICE_URL=http://customer:8001

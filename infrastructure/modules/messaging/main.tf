@@ -74,6 +74,31 @@ resource "aws_sqs_queue" "order_created_products" {
 }
 
 ########################################################
+# SQS DEAD LETTER QUEUE — CACHE INVALIDATED
+########################################################
+
+resource "aws_sqs_queue" "cache_invalidated_dlq" {
+  name                    = "${var.project_name}-cache-invalidated-dlq"
+  sqs_managed_sse_enabled = true
+}
+
+########################################################
+# MAIN SQS QUEUE — CACHE INVALIDATED
+########################################################
+
+resource "aws_sqs_queue" "cache_invalidated_queue" {
+  name                       = "${var.project_name}-cache-invalidated-queue"
+  visibility_timeout_seconds = 30
+  message_retention_seconds  = 86400
+  sqs_managed_sse_enabled    = true
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.cache_invalidated_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+########################################################
 # EVENTBRIDGE BUS
 ########################################################
 
@@ -102,6 +127,21 @@ resource "aws_cloudwatch_event_rule" "order_created_rule" {
   event_pattern = jsonencode({
     source      = ["shopping.service"]
     detail-type = ["OrderCreated"]
+  })
+}
+
+########################################################
+# EVENT RULE — CACHE INVALIDATED
+########################################################
+
+resource "aws_cloudwatch_event_rule" "cache_invalidated_rule" {
+  name           = "${var.project_name}-cache-invalidated-rule"
+  description    = "Cache invalidation events"
+  event_bus_name = aws_cloudwatch_event_bus.microservices_bus.name
+
+  event_pattern = jsonencode({
+    source      = ["products.service"]
+    detail-type = ["CacheInvalidated"]
   })
 }
 
@@ -138,6 +178,17 @@ resource "aws_cloudwatch_event_target" "sqs_order_products_target" {
 
   depends_on = [
     aws_sqs_queue_policy.allow_eventbridge_order_created_products
+  ]
+}
+
+resource "aws_cloudwatch_event_target" "cache_invalidated_target" {
+  rule           = aws_cloudwatch_event_rule.cache_invalidated_rule.name
+  event_bus_name = aws_cloudwatch_event_bus.microservices_bus.name
+  target_id      = "CacheInvalidatedQueue"
+  arn            = aws_sqs_queue.cache_invalidated_queue.arn
+
+  depends_on = [
+    aws_sqs_queue_policy.allow_eventbridge_cache_invalidated
   ]
 }
 
@@ -207,6 +258,29 @@ resource "aws_sqs_queue_policy" "allow_eventbridge_order_created_products" {
         Condition = {
           ArnEquals = {
             "aws:SourceArn" = aws_cloudwatch_event_rule.order_created_rule.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_sqs_queue_policy" "allow_eventbridge_cache_invalidated" {
+  queue_url = aws_sqs_queue.cache_invalidated_queue.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action   = "sqs:SendMessage"
+        Resource = aws_sqs_queue.cache_invalidated_queue.arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = aws_cloudwatch_event_rule.cache_invalidated_rule.arn
           }
         }
       }

@@ -53,7 +53,7 @@ services:
       SHOPPING_SERVICE: SHOPPING_SERVICE
       MONGO_URI: mongodb://${DOCDB_USERNAME}:${DOCDB_PASSWORD}@${DOCDB_ENDPOINT}:27017/products?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false&authSource=admin
       SQS_QUEUE_URL: ${ORDER_CREATED_PRODUCTS_QUEUE_URL}
-
+      CACHE_INVALIDATED_QUEUE_URL: ${CACHE_INVALIDATED_QUEUE_URL}
       REDIS_URL: redis://redis:6379
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:8002/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))" ]
