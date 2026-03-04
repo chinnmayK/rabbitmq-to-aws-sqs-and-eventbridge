@@ -1,30 +1,89 @@
-FROM public.ecr.aws/docker/library/node:20-alpine
+###############################################
+#                BASE IMAGE                   #
+###############################################
+FROM public.ecr.aws/docker/library/node:20-alpine AS base
+
+ENV NPM_CONFIG_LOGLEVEL=warn \
+    NODE_ENV=production
 
 WORKDIR /app
 
-# Copy service package.json to root to install all dependencies at /app/node_modules
+
+
+###############################################
+#             DEPENDENCY STAGE                #
+#  Installs build tools + node dependencies   #
+###############################################
+FROM base AS dependencies
+
+# Build tools required to compile native modules (bcrypt)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    bash \
+    libc6-compat
+
 COPY shopping/package*.json ./
+
 RUN npm ci --omit=dev
 
-# Copy shared modules
-COPY shared/ ./shared/
+RUN npm cache clean --force
 
-# Copy service code
+
+
+###############################################
+#               BUILD STAGE                   #
+#   Copies application source after deps      #
+###############################################
+FROM dependencies AS build
+
+COPY shared/ ./shared/
 COPY shopping/ ./shopping/
 
-# Install wget and ca-certificates for TLS bundle download
-RUN apk add --no-cache wget ca-certificates
+RUN rm -rf \
+    /root/.npm \
+    /tmp/*
 
-# Download AWS DocumentDB TLS CA bundle
+
+
+###############################################
+#            RUNTIME STAGE (FINAL)            #
+#     Lightweight, secure production image    #
+###############################################
+FROM public.ecr.aws/docker/library/node:20-alpine AS runtime
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+    ca-certificates \
+    wget \
+    tini
+
+RUN addgroup -S appgroup && \
+    adduser -S appuser -G appgroup
+
+COPY --from=build /app /app
+
+# Download AWS DocumentDB TLS global bundle
 RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
     -O /app/global-bundle.pem
 
-# Create non-root user and fix permissions
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app
+
 USER appuser
 
-ENV PORT=8003
+###############################################
+#              SECURITY SETTINGS              #
+###############################################
+ENTRYPOINT ["/sbin/tini", "--"]
+
+ENV PORT=8003 \
+    NODE_ENV=production
+
 EXPOSE 8003
 
+###############################################
+#                START COMMAND                #
+###############################################
 CMD ["node", "shopping/src/server.js"]
