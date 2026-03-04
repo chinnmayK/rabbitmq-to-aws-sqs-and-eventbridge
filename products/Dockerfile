@@ -1,34 +1,27 @@
-# ---------- Build Stage ----------
-FROM public.ecr.aws/docker/library/node:20-alpine AS builder
+FROM public.ecr.aws/docker/library/node:20-alpine
 
-WORKDIR /app/products
+WORKDIR /app
 
+# Copy service package.json to root to install all dependencies at /app/node_modules
 COPY products/package*.json ./
 RUN npm ci --omit=dev
 
-COPY products/ .
+# Copy shared modules
+COPY shared/ ./shared/
 
-# ---------- Runtime Stage ----------
-FROM public.ecr.aws/docker/library/node:20-alpine
-
-WORKDIR /app/products
-
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-COPY --from=builder /app/products /app/products
-
-# Copy shared modules (resolves ../../shared/ and ../../../shared/ imports)
-COPY shared/ /app/shared/
+# Copy service code
+COPY products/ ./products/
 
 # Download AWS DocumentDB TLS CA bundle
 RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
     -O /app/products/global-bundle.pem
 
+# Create non-root user and fix permissions
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
 USER appuser
 
 ENV PORT=8002
-
 EXPOSE 8002
 
-CMD ["node", "src/server.js"]
+CMD ["node", "products/src/server.js"]
