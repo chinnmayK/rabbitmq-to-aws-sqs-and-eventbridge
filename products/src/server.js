@@ -7,23 +7,21 @@ const ProductService = require("./services/product-service");
 const logger = require("../../shared/logger");
 
 const StartServer = async () => {
+    app.listen(PORT, "0.0.0.0", () => {
+        logger.info('Products service listening', { port: PORT });
+    }).on('error', (err) => {
+        logger.error('Server failed to start', { error: err.message });
+        process.exit(1);
+    });
+
     try {
         await databaseConnection();
         await connectRedis();
 
         const service = new ProductService();
         StartSQSConsumer(service);
-
-        app.listen(PORT, "0.0.0.0", () => {
-            logger.info('Products service listening', { port: PORT });
-        }).on('error', (err) => {
-            logger.error('Server failed to start', { error: err.message });
-            process.exit(1);
-        });
-
     } catch (err) {
         logger.error('Startup error', { error: err.message });
-        process.exit(1);
     }
 };
 

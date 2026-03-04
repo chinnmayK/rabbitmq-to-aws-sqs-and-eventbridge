@@ -6,22 +6,19 @@ const ShoppingService = require("./services/shopping-service");
 const logger = require("../../shared/logger");
 
 const StartServer = async () => {
+    app.listen(PORT, "0.0.0.0", () => {
+        logger.info('Shopping service listening', { port: PORT });
+    }).on('error', (err) => {
+        logger.error('Server failed to start', { error: err.message });
+        process.exit(1);
+    });
+
     try {
         await databaseConnection();
-
         const service = new ShoppingService();
         StartSQSConsumer(service);
-
-        app.listen(PORT, "0.0.0.0", () => {
-            logger.info('Shopping service listening', { port: PORT });
-        }).on('error', (err) => {
-            logger.error('Server failed to start', { error: err.message });
-            process.exit(1);
-        });
-
     } catch (err) {
         logger.error('Startup error', { error: err.message });
-        process.exit(1);
     }
 };
 

@@ -16,7 +16,6 @@ const databaseConnection = async () => {
 
   } catch (err) {
     logger.error("DB Connection Error", { error: err.message });
-    process.exit(1);
   }
 };
 

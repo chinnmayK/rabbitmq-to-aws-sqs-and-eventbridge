@@ -28,4 +28,4 @@ ENV PORT=8003
 
 EXPOSE 8003
 
-CMD ["node", "src/index.js"]
+CMD ["node", "src/server.js"]
