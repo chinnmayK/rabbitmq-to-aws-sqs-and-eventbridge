@@ -12,9 +12,12 @@ COPY shared/ ./shared/
 # Copy service code
 COPY products/ ./products/
 
+# Install wget and ca-certificates for TLS bundle download
+RUN apk add --no-cache wget ca-certificates
+
 # Download AWS DocumentDB TLS CA bundle
 RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
-    -O /app/products/global-bundle.pem
+    -O /app/global-bundle.pem
 
 # Create non-root user and fix permissions
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
