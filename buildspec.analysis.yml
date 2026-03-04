@@ -23,7 +23,7 @@ phases:
       - echo "Installing root shared dependencies"
       - npm install
       - echo "Starting Redis locally"
-      - (which redis-server && redis-server --daemonize yes) || docker run -d -p 6379:6379 redis:7 || echo "Redis start failed, but continuing..."
+      - (which redis-server && redis-server --daemonize yes) || (docker pull public.ecr.aws/docker/library/redis:7 && docker run -d -p 6379:6379 public.ecr.aws/docker/library/redis:7) || echo "Redis start failed, but continuing..."
       
       - echo "Running tests in all services to generate coverage"
       - cd customer && npm install && npm test && cd ..
