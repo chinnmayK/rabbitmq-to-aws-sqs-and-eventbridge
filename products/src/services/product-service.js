@@ -21,6 +21,13 @@ class ProductService {
         data: product
       };
       await PublishMessage("ProductCreated", payload);
+
+      // Invalidate products cache
+      await PublishMessage("CacheInvalidated", {
+        event: "CacheInvalidated",
+        data: { cacheKey: "products:all" }
+      });
+      logger.info("CacheInvalidated event published", { cacheKey: "products:all" });
     }
 
     return FormateData(product);
