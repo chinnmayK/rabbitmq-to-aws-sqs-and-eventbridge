@@ -12,6 +12,7 @@ phases:
     commands:
       - IMAGE_TAG=$(git rev-parse HEAD)
       - chmod +x scripts/detect_changes.sh
+      - chmod +x scripts/deploy.sh
       - ./scripts/detect_changes.sh
       - export $(cat pipeline.env | xargs)
       - echo "========== PRE-BUILD START =========="
@@ -99,4 +100,4 @@ artifacts:
     - appspec.yml
     - docker-compose.yml
     - scripts/deploy.sh
-  discard-paths: yes 
+  discard-paths: no 
