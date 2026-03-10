@@ -32,6 +32,12 @@ echo "RUN_ANALYSIS=$RUN_ANALYSIS"
 echo "RUN_BUILD=$RUN_BUILD"
 echo "RUN_DEPLOY=$RUN_DEPLOY"
 
-echo "RUN_ANALYSIS=$RUN_ANALYSIS" >> pipeline.env
-echo "RUN_BUILD=$RUN_BUILD" >> pipeline.env
-echo "RUN_DEPLOY=$RUN_DEPLOY" >> pipeline.env
+# Create env file
+cat <<EOF > pipeline.env
+RUN_ANALYSIS=$RUN_ANALYSIS
+RUN_BUILD=$RUN_BUILD
+RUN_DEPLOY=$RUN_DEPLOY
+EOF
+
+echo "pipeline.env created:"
+cat pipeline.env
