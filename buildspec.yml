@@ -13,7 +13,7 @@ phases:
       - IMAGE_TAG=$(git rev-parse HEAD)
       - chmod +x scripts/detect_changes.sh
       - ./scripts/detect_changes.sh
-      - if [ -f pipeline.env ]; then . pipeline.env; else echo "pipeline.env missing"; fi
+      - export $(cat pipeline.env | xargs)
       - echo "========== PRE-BUILD START =========="
 
       # Fix line endings (CRLF → LF)
