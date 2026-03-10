@@ -1,0 +1,90 @@
+{
+    "pipelineName": "r2sqs-eb-pipeline",
+    "pipelineVersion": 1,
+    "stageStates": [
+        {
+            "stageName": "Source",
+            "inboundExecutions": [],
+            "inboundTransitionState": {
+                "enabled": true
+            },
+            "actionStates": [
+                {
+                    "actionName": "GitHub_Source",
+                    "currentRevision": {
+                        "revisionId": "e1b972b92fad9b5039cfb35986a5b76633a8b378"
+                    },
+                    "latestExecution": {
+                        "actionExecutionId": "eb2a505d-ed8a-44df-aef5-de1a05a2ebb4",
+                        "status": "Succeeded",
+                        "summary": "{\"ProviderType\":\"GitHub\",\"CommitMessage\":\" Updated Pipeline\"}",
+                        "lastStatusChange": "2026-03-10T10:48:27.984000+05:30",
+                        "externalExecutionId": "e1b972b92fad9b5039cfb35986a5b76633a8b378"
+                    },
+                    "entityUrl": "https://ap-south-1.console.aws.amazon.com/codesuite/settings/connections/redirect?connectionArn=arn:aws:codestar-connections:ap-south-1:202533520289:connection/9c07fdaf-a85f-4a1d-af78-c97ce01f18af&referenceType=BRANCH&FullRepositoryId=chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge&Branch=main",
+                    "revisionUrl": "https://ap-south-1.console.aws.amazon.com/codesuite/settings/connections/redirect?connectionArn=arn:aws:codestar-connections:ap-south-1:202533520289:connection/9c07fdaf-a85f-4a1d-af78-c97ce01f18af&referenceType=COMMIT&FullRepositoryId=chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge&Commit=e1b972b92fad9b5039cfb35986a5b76633a8b378"
+                }
+            ],
+            "latestExecution": {
+                "pipelineExecutionId": "665b69c7-0c28-4fdb-898e-21e923cc2daa",
+                "status": "Succeeded"
+            }
+        },
+        {
+            "stageName": "Analysis",
+            "inboundExecutions": [],
+            "inboundTransitionState": {
+                "enabled": true
+            },
+            "actionStates": [
+                {
+                    "actionName": "SonarQube_Analysis",
+                    "latestExecution": {
+                        "actionExecutionId": "78544b91-e492-4457-aab8-7211831c5d3b",
+                        "status": "Failed",
+                        "lastStatusChange": "2026-03-10T10:49:00.113000+05:30",
+                        "externalExecutionId": "r2sqs-eb-sonar-analysis:3cc532d3-8ece-4b2d-85c4-5a3b01b1f138",
+                        "externalExecutionUrl": "https://console.aws.amazon.com/codebuild/home?region=ap-south-1#/builds/r2sqs-eb-sonar-analysis:3cc532d3-8ece-4b2d-85c4-5a3b01b1f138/view/new",
+                        "errorDetails": {
+                            "code": "JobFailed",
+                            "message": "Build terminated with state: FAILED. Phase: DOWNLOAD_SOURCE, Code: CLIENT_ERROR, Message: authorization failed for primary source and source version e1b972b92fad9b5039cfb35986a5b76633a8b378"
+                        }
+                    },
+                    "entityUrl": "https://console.aws.amazon.com/codebuild/home?region=ap-south-1#/projects/r2sqs-eb-sonar-analysis/view"
+                }
+            ],
+            "latestExecution": {
+                "pipelineExecutionId": "665b69c7-0c28-4fdb-898e-21e923cc2daa",
+                "status": "Failed"
+            }
+        },
+        {
+            "stageName": "Build",
+            "inboundExecutions": [],
+            "inboundTransitionState": {
+                "enabled": true
+            },
+            "actionStates": [
+                {
+                    "actionName": "Docker_Build",
+                    "entityUrl": "https://console.aws.amazon.com/codebuild/home?region=ap-south-1#/projects/r2sqs-eb-build/view"
+                }
+            ]
+        },
+        {
+            "stageName": "Deploy",
+            "inboundExecutions": [],
+            "inboundTransitionState": {
+                "enabled": true
+            },
+            "actionStates": [
+                {
+                    "actionName": "DeployToEC2",
+                    "entityUrl": "https://console.aws.amazon.com/codedeploy/home?region=ap-south-1#/applications/r2sqs-eb-app"
+                }
+            ]
+        }
+    ],
+    "created": "2026-03-10T10:31:19.756000+05:30",
+    "updated": "2026-03-10T10:31:19.756000+05:30"
+}

@@ -162,6 +162,24 @@ resource "aws_iam_role_policy" "codebuild_ssm_policy" {
 }
 
 ########################################################
+# CODEBUILD CODESTAR (for GitHub source download)
+########################################################
+
+resource "aws_iam_role_policy" "codebuild_codestar_permission" {
+  name = "${var.project_name}-codebuild-codestar"
+  role = aws_iam_role.codebuild_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "codestar-connections:UseConnection"
+      Resource = "*"
+    }]
+  })
+}
+
+########################################################
 # CODEPIPELINE ROLE
 ########################################################
 

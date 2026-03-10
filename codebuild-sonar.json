@@ -1,0 +1,64 @@
+{
+    "projects": [
+        {
+            "name": "r2sqs-eb-sonar-analysis",
+            "arn": "arn:aws:codebuild:ap-south-1:202533520289:project/r2sqs-eb-sonar-analysis",
+            "description": "SonarQube static analysis + quality gate",
+            "source": {
+                "type": "CODEPIPELINE",
+                "buildspec": "buildspec.analysis.yml",
+                "insecureSsl": false
+            },
+            "artifacts": {
+                "type": "CODEPIPELINE",
+                "name": "r2sqs-eb-sonar-analysis",
+                "packaging": "NONE",
+                "overrideArtifactName": false,
+                "encryptionDisabled": false
+            },
+            "cache": {
+                "type": "NO_CACHE"
+            },
+            "environment": {
+                "type": "LINUX_CONTAINER",
+                "image": "aws/codebuild/standard:7.0",
+                "computeType": "BUILD_GENERAL1_SMALL",
+                "environmentVariables": [
+                    {
+                        "name": "AWS_DEFAULT_REGION",
+                        "value": "ap-south-1",
+                        "type": "PLAINTEXT"
+                    },
+                    {
+                        "name": "PROJECT_NAME",
+                        "value": "r2sqs-eb",
+                        "type": "PLAINTEXT"
+                    }
+                ],
+                "privilegedMode": false,
+                "imagePullCredentialsType": "CODEBUILD"
+            },
+            "serviceRole": "arn:aws:iam::202533520289:role/r2sqs-eb-codebuild-role",
+            "timeoutInMinutes": 15,
+            "queuedTimeoutInMinutes": 480,
+            "encryptionKey": "arn:aws:kms:ap-south-1:202533520289:alias/aws/s3",
+            "tags": [],
+            "created": "2026-03-10T10:31:17.373000+05:30",
+            "lastModified": "2026-03-10T10:31:17.373000+05:30",
+            "badge": {
+                "badgeEnabled": false
+            },
+            "logsConfig": {
+                "cloudWatchLogs": {
+                    "status": "ENABLED"
+                },
+                "s3Logs": {
+                    "status": "DISABLED",
+                    "encryptionDisabled": false
+                }
+            },
+            "projectVisibility": "PRIVATE"
+        }
+    ],
+    "projectsNotFound": []
+}

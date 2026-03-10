@@ -1,0 +1,11 @@
+{
+    "Connections": [
+        {
+            "ConnectionName": "r2sqs-eb-gc",
+            "ConnectionArn": "arn:aws:codestar-connections:ap-south-1:202533520289:connection/9c07fdaf-a85f-4a1d-af78-c97ce01f18af",
+            "ProviderType": "GitHub",
+            "OwnerAccountId": "202533520289",
+            "ConnectionStatus": "AVAILABLE"
+        }
+    ]
+}

@@ -1,0 +1,129 @@
+{
+    "pipeline": {
+        "name": "r2sqs-eb-pipeline",
+        "roleArn": "arn:aws:iam::202533520289:role/r2sqs-eb-codepipeline-role",
+        "artifactStore": {
+            "type": "S3",
+            "location": "r2sqs-eb-artifacts",
+            "encryptionKey": {
+                "id": "alias/aws/s3",
+                "type": "KMS"
+            }
+        },
+        "stages": [
+            {
+                "name": "Source",
+                "actions": [
+                    {
+                        "name": "GitHub_Source",
+                        "actionTypeId": {
+                            "category": "Source",
+                            "owner": "AWS",
+                            "provider": "CodeStarSourceConnection",
+                            "version": "1"
+                        },
+                        "runOrder": 1,
+                        "configuration": {
+                            "BranchName": "main",
+                            "ConnectionArn": "arn:aws:codestar-connections:ap-south-1:202533520289:connection/9c07fdaf-a85f-4a1d-af78-c97ce01f18af",
+                            "DetectChanges": "true",
+                            "FullRepositoryId": "chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge",
+                            "OutputArtifactFormat": "CODEBUILD_CLONE_REF"
+                        },
+                        "outputArtifacts": [
+                            {
+                                "name": "source_output"
+                            }
+                        ],
+                        "inputArtifacts": []
+                    }
+                ]
+            },
+            {
+                "name": "Analysis",
+                "actions": [
+                    {
+                        "name": "SonarQube_Analysis",
+                        "actionTypeId": {
+                            "category": "Build",
+                            "owner": "AWS",
+                            "provider": "CodeBuild",
+                            "version": "1"
+                        },
+                        "runOrder": 1,
+                        "configuration": {
+                            "ProjectName": "r2sqs-eb-sonar-analysis"
+                        },
+                        "outputArtifacts": [],
+                        "inputArtifacts": [
+                            {
+                                "name": "source_output"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Build",
+                "actions": [
+                    {
+                        "name": "Docker_Build",
+                        "actionTypeId": {
+                            "category": "Build",
+                            "owner": "AWS",
+                            "provider": "CodeBuild",
+                            "version": "1"
+                        },
+                        "runOrder": 1,
+                        "configuration": {
+                            "ProjectName": "r2sqs-eb-build"
+                        },
+                        "outputArtifacts": [
+                            {
+                                "name": "build_output"
+                            }
+                        ],
+                        "inputArtifacts": [
+                            {
+                                "name": "source_output"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Deploy",
+                "actions": [
+                    {
+                        "name": "DeployToEC2",
+                        "actionTypeId": {
+                            "category": "Deploy",
+                            "owner": "AWS",
+                            "provider": "CodeDeploy",
+                            "version": "1"
+                        },
+                        "runOrder": 1,
+                        "configuration": {
+                            "ApplicationName": "r2sqs-eb-app",
+                            "DeploymentGroupName": "r2sqs-eb-dg"
+                        },
+                        "outputArtifacts": [],
+                        "inputArtifacts": [
+                            {
+                                "name": "build_output"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "version": 1,
+        "executionMode": "SUPERSEDED",
+        "pipelineType": "V1"
+    },
+    "metadata": {
+        "pipelineArn": "arn:aws:codepipeline:ap-south-1:202533520289:r2sqs-eb-pipeline",
+        "created": "2026-03-10T10:31:19.756000+05:30",
+        "updated": "2026-03-10T10:31:19.756000+05:30"
+    }
+}
