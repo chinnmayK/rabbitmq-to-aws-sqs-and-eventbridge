@@ -3,41 +3,56 @@
 echo "Checking changed files..."
 
 CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || true)
-
 echo "$CHANGED_FILES"
 
 RUN_ANALYSIS=false
 RUN_BUILD=false
 RUN_DEPLOY=false
 
-# ---------- FIRST DEPLOYMENT CHECK ----------
-echo "Checking if images exist in ECR..."
+PROJECT_NAME="r2sqs-eb"
+SERVICES=("customer" "products" "shopping" "gateway")
+
+########################################
+# Detect empty ECR repositories
+########################################
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_URL="$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 
-SERVICES=("customer" "products" "shopping" "gateway")
+echo "Checking if ECR images exist..."
 
-MISSING_IMAGE=false
+ECR_EMPTY=false
 
 for service in "${SERVICES[@]}"; do
-  if ! aws ecr describe-images \
-       --repository-name "$PROJECT_NAME-$service" \
-       --region "$AWS_DEFAULT_REGION" \
-       --query 'imageDetails[*].imageTags' \
-       --output text 2>/dev/null | grep -q latest; then
-    echo "Image for $service not found in ECR"
-    MISSING_IMAGE=true
+
+  IMAGE_COUNT=$(aws ecr describe-images \
+      --repository-name "$PROJECT_NAME-$service" \
+      --region "$AWS_DEFAULT_REGION" \
+      --query 'imageDetails | length(@)' \
+      --output text 2>/dev/null || echo 0)
+
+  if [ "$IMAGE_COUNT" = "0" ]; then
+      echo "Repository $PROJECT_NAME-$service has no images"
+      ECR_EMPTY=true
   fi
+
 done
 
-if [ "$MISSING_IMAGE" = true ]; then
-  echo "First deployment detected — forcing full build and deploy"
+########################################
+# If no images exist → force full build
+########################################
+
+if [ "$ECR_EMPTY" = true ]; then
+
+  echo "First deployment detected → forcing full build"
+
   RUN_ANALYSIS=true
   RUN_BUILD=true
   RUN_DEPLOY=true
+
 else
-  echo "Existing deployment detected — applying optimized pipeline"
+
+  echo "Existing images found → using optimized pipeline"
 
   for file in $CHANGED_FILES
   do
@@ -56,6 +71,7 @@ else
         RUN_DEPLOY=true
     fi
   done
+
 fi
 
 echo "RUN_ANALYSIS=$RUN_ANALYSIS"

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   redis:
@@ -12,7 +10,7 @@ services:
       - app-network
 
   customer:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-customer:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-customer:${IMAGE_TAG:-latest}
     container_name: customer
     restart: unless-stopped
     ports:
@@ -37,7 +35,7 @@ services:
       - app-network
 
   products:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-products:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-products:${IMAGE_TAG:-latest}
     container_name: products
     restart: unless-stopped
     ports:
@@ -65,7 +63,7 @@ services:
       - app-network
 
   shopping:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-shopping:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-shopping:${IMAGE_TAG:-latest}
     container_name: shopping
     restart: unless-stopped
     ports:
@@ -90,7 +88,7 @@ services:
       - app-network
 
   gateway:
-    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-gateway:latest
+    image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/r2sqs-eb-gateway:${IMAGE_TAG:-latest}
     container_name: gateway
     restart: unless-stopped
     ports:

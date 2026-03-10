@@ -57,6 +57,7 @@ phases:
                  docker build -f "$service/Dockerfile" -t "$PROJECT_NAME-$service:$IMAGE_TAG" .
                fi
                docker tag "$PROJECT_NAME-$service:$IMAGE_TAG" "$ECR_URL/$PROJECT_NAME-$service:$IMAGE_TAG"
+               docker tag "$PROJECT_NAME-$service:$IMAGE_TAG" "$ECR_URL/$PROJECT_NAME-$service:latest"
             fi
           }
           
@@ -72,6 +73,7 @@ phases:
 
   post_build:
     commands:
+      - echo IMAGE_TAG=$IMAGE_TAG > image.env
       - |
         if [ "$RUN_DEPLOY" = "true" ] || [ "$RUN_BUILD" = "true" ]; then
           echo "========== PUSH START =========="
@@ -82,6 +84,7 @@ phases:
                echo "Image $PROJECT_NAME-$service:$IMAGE_TAG already in ECR. Skipping push."
             else
                docker push "$ECR_URL/$PROJECT_NAME-$service:$IMAGE_TAG"
+               docker push "$ECR_URL/$PROJECT_NAME-$service:latest"
             fi
           }
           
@@ -100,4 +103,5 @@ artifacts:
     - appspec.yml
     - docker-compose.yml
     - scripts/deploy.sh
+    - image.env
   discard-paths: no 

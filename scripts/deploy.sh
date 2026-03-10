@@ -25,7 +25,14 @@ fi
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 PROJECT_NAME="r2sqs-eb"
 ECR_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
+echo "Loading image tag..."
+if [ -f image.env ]; then
+    source image.env
+else
+    IMAGE_TAG=latest
+fi
+export IMAGE_TAG
+echo "Using image tag: $IMAGE_TAG"
 
 ########################################
 # SQS Queue URLs (one per service)
@@ -226,7 +233,7 @@ echo "===== Environment Configuration (Masked) ====="
 sed -E 's/=(.*)/=********/' .env | grep -v '^#' || true
 
 ########################################
-# Docker Compose
+# Docker Compose Pull and Start
 ########################################
 if docker compose version >/dev/null 2>&1; then
     DOCKER_CMD="docker compose"
@@ -236,54 +243,26 @@ fi
 
 $DOCKER_CMD down || true
 
-CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+SERVICES=("customer" "products" "shopping" "gateway")
 
-REBUILD_ALL=false
-if echo "$CHANGED_FILES" | grep -qE "^(docker-compose.yml|scripts/|infrastructure/|package.json)"; then
-  REBUILD_ALL=true
-fi
+for service in "${SERVICES[@]}"; do
+    if aws ecr describe-images \
+        --repository-name "${PROJECT_NAME}-$service" \
+        --image-ids imageTag=$IMAGE_TAG \
+        --region "$AWS_REGION" \
+        >/dev/null 2>&1
+    then
+        TAG=$IMAGE_TAG
+        docker pull "$ECR_URL/${PROJECT_NAME}-$service:$TAG"
+    else
+        echo "Image tag $IMAGE_TAG not found for $service, using latest"
+        docker pull "$ECR_URL/${PROJECT_NAME}-$service:latest"
+        # Tag locally to satisfy docker-compose expectation of $IMAGE_TAG
+        docker tag "$ECR_URL/${PROJECT_NAME}-$service:latest" "$ECR_URL/${PROJECT_NAME}-$service:$IMAGE_TAG"
+    fi
+done
 
-if [ "$REBUILD_ALL" = "true" ] || [ -z "$CHANGED_FILES" ]; then
-  echo "Global files changed or no git history. Rebuilding and starting all services..."
-  docker pull "$ECR_URL/r2sqs-eb-customer:$IMAGE_TAG" || true
-  docker pull "$ECR_URL/r2sqs-eb-products:$IMAGE_TAG" || true
-  docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG" || true
-  docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG" || true
-  $DOCKER_CMD up -d
-else
-  echo "Selective deployment based on changed files..."
-  
-  if echo "$CHANGED_FILES" | grep -q "^customer/"; then
-    echo "Updating Customer service..."
-    docker pull "$ECR_URL/r2sqs-eb-customer:$IMAGE_TAG" || true
-    $DOCKER_CMD build customer
-    $DOCKER_CMD up -d customer
-  fi
-
-  if echo "$CHANGED_FILES" | grep -q "^products/"; then
-    echo "Updating Products service..."
-    docker pull "$ECR_URL/r2sqs-eb-products:$IMAGE_TAG" || true
-    $DOCKER_CMD build products
-    $DOCKER_CMD up -d products
-  fi
-
-  if echo "$CHANGED_FILES" | grep -q "^shopping/"; then
-    echo "Updating Shopping service..."
-    docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG" || true
-    $DOCKER_CMD build shopping
-    $DOCKER_CMD up -d shopping
-  fi
-
-  if echo "$CHANGED_FILES" | grep -q "^gateway/"; then
-    echo "Updating Gateway service..."
-    docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG" || true
-    $DOCKER_CMD build gateway
-    $DOCKER_CMD up -d gateway
-  fi
-  
-  # Ensure gateway is running at minimum if we took things down
-  $DOCKER_CMD up -d gateway
-fi
+$DOCKER_CMD up -d
 
 echo "===== Container Health Status ====="
 docker ps --format 'table {{.Names}}\t{{.Status}}'
