@@ -61,6 +61,11 @@ resource "aws_codebuild_project" "microservices_build" {
     buildspec = "buildspec.yml"
   }
 
+  cache {
+    type  = "LOCAL"
+    modes = ["LOCAL_DOCKER_LAYER_CACHE", "LOCAL_SOURCE_CACHE"]
+  }
+
   build_timeout = 20
 }
 
@@ -176,10 +181,11 @@ resource "aws_codepipeline" "microservices_pipeline" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        ConnectionArn    = aws_codestarconnections_connection.github.arn
-        FullRepositoryId = "chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge"
-        BranchName       = "main"
-        DetectChanges    = "true"
+        ConnectionArn        = aws_codestarconnections_connection.github.arn
+        FullRepositoryId     = "chinnmayK/rabbitmq-to-aws-sqs-and-eventbridge"
+        BranchName           = "main"
+        DetectChanges        = "true"
+        OutputArtifactFormat = "CODEBUILD_CLONE_REF"
       }
     }
   }

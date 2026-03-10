@@ -2,7 +2,6 @@ version: 0.2
 
 env:
   variables:
-    IMAGE_TAG: latest
     PROJECT_NAME: r2sqs-eb
 
 phases:
@@ -11,6 +10,10 @@ phases:
       nodejs: 20
   pre_build:
     commands:
+      - IMAGE_TAG=$(git rev-parse HEAD)
+      - chmod +x scripts/detect_changes.sh
+      - ./scripts/detect_changes.sh
+      - source pipeline.env
       - echo "========== PRE-BUILD START =========="
 
       # Fix line endings (CRLF → LF)
@@ -37,38 +40,63 @@ phases:
 
   build:
     commands:
-      - echo "========== BUILD START =========="
-      - echo "Build started on $(date)"
-
-      # Build Docker images
-      - docker build -f customer/Dockerfile -t $PROJECT_NAME-customer:$IMAGE_TAG .
-      - docker build -f products/Dockerfile -t $PROJECT_NAME-products:$IMAGE_TAG .
-      - docker build -f shopping/Dockerfile -t $PROJECT_NAME-shopping:$IMAGE_TAG .
-      - docker build -t $PROJECT_NAME-gateway:$IMAGE_TAG ./gateway
-
-      # Tag images for ECR
-      - docker tag $PROJECT_NAME-customer:$IMAGE_TAG $ECR_URL/$PROJECT_NAME-customer:$IMAGE_TAG
-      - docker tag $PROJECT_NAME-products:$IMAGE_TAG $ECR_URL/$PROJECT_NAME-products:$IMAGE_TAG
-      - docker tag $PROJECT_NAME-shopping:$IMAGE_TAG $ECR_URL/$PROJECT_NAME-shopping:$IMAGE_TAG
-      - docker tag $PROJECT_NAME-gateway:$IMAGE_TAG $ECR_URL/$PROJECT_NAME-gateway:$IMAGE_TAG
-
-      - echo "========== BUILD COMPLETE =========="
+      - |
+        if [ "$RUN_BUILD" = "true" ]; then
+          echo "========== BUILD START =========="
+          echo "Build started on $(date)"
+          
+          build_service() {
+            local service=$1
+            if aws ecr describe-images --repository-name "$PROJECT_NAME-$service" --image-ids imageTag="$IMAGE_TAG" --region "$AWS_DEFAULT_REGION" >/dev/null 2>&1; then
+               echo "Image $PROJECT_NAME-$service:$IMAGE_TAG already exists. Skipping build."
+            else
+               if [ "$service" = "gateway" ]; then
+                 docker build -t "$PROJECT_NAME-$service:$IMAGE_TAG" ./gateway
+               else
+                 docker build -f "$service/Dockerfile" -t "$PROJECT_NAME-$service:$IMAGE_TAG" .
+               fi
+               docker tag "$PROJECT_NAME-$service:$IMAGE_TAG" "$ECR_URL/$PROJECT_NAME-$service:$IMAGE_TAG"
+            fi
+          }
+          
+          build_service "customer"
+          build_service "products"
+          build_service "shopping"
+          build_service "gateway"
+          
+          echo "========== BUILD COMPLETE =========="
+        else
+          echo "Skipping Build"
+        fi
 
   post_build:
     commands:
-      - echo "========== PUSH START =========="
-
-      # Push images into ECR
-      - docker push $ECR_URL/$PROJECT_NAME-customer:$IMAGE_TAG
-      - docker push $ECR_URL/$PROJECT_NAME-products:$IMAGE_TAG
-      - docker push $ECR_URL/$PROJECT_NAME-shopping:$IMAGE_TAG
-      - docker push $ECR_URL/$PROJECT_NAME-gateway:$IMAGE_TAG
-
-      - echo "========== PUSH COMPLETE =========="
+      - |
+        if [ "$RUN_DEPLOY" = "true" ] || [ "$RUN_BUILD" = "true" ]; then
+          echo "========== PUSH START =========="
+          
+          push_service() {
+            local service=$1
+            if aws ecr describe-images --repository-name "$PROJECT_NAME-$service" --image-ids imageTag="$IMAGE_TAG" --region "$AWS_DEFAULT_REGION" >/dev/null 2>&1; then
+               echo "Image $PROJECT_NAME-$service:$IMAGE_TAG already in ECR. Skipping push."
+            else
+               docker push "$ECR_URL/$PROJECT_NAME-$service:$IMAGE_TAG"
+            fi
+          }
+          
+          push_service "customer"
+          push_service "products"
+          push_service "shopping"
+          push_service "gateway"
+          
+          echo "========== PUSH COMPLETE =========="
+        else
+          echo "Skipping Deploy"
+        fi
 
 artifacts:
   files:
     - appspec.yml
     - docker-compose.yml
-    - deploy.sh
+    - scripts/deploy.sh
   discard-paths: yes 

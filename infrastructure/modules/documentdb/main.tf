@@ -75,7 +75,7 @@ resource "aws_docdb_cluster_instance" "this" {
 }
 
 ########################################################
-# STORE ENDPOINT IN SSM (for deploy.sh)
+# STORE ENDPOINT IN SSM (for scripts/deploy.sh)
 ########################################################
 
 resource "aws_ssm_parameter" "docdb_endpoint" {

@@ -7,7 +7,7 @@ resource "aws_instance" "app" {
   iam_instance_profile        = var.instance_profile_name
   key_name                    = "my-key"
 
-  user_data_base64 = base64encode(file("${path.module}/user_data.sh"))
+  user_data_base64 = base64encode(file("${path.module}/../../../scripts/user_data.sh"))
 
   metadata_options {
     http_endpoint = "enabled"

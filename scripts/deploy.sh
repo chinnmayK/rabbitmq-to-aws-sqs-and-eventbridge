@@ -236,12 +236,54 @@ fi
 
 $DOCKER_CMD down || true
 
-docker pull "$ECR_URL/r2sqs-eb-customer:$IMAGE_TAG"
-docker pull "$ECR_URL/r2sqs-eb-products:$IMAGE_TAG"
-docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG"
-docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG"
+CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
 
-$DOCKER_CMD up -d
+REBUILD_ALL=false
+if echo "$CHANGED_FILES" | grep -qE "^(docker-compose.yml|scripts/|infrastructure/|package.json)"; then
+  REBUILD_ALL=true
+fi
+
+if [ "$REBUILD_ALL" = "true" ] || [ -z "$CHANGED_FILES" ]; then
+  echo "Global files changed or no git history. Rebuilding and starting all services..."
+  docker pull "$ECR_URL/r2sqs-eb-customer:$IMAGE_TAG" || true
+  docker pull "$ECR_URL/r2sqs-eb-products:$IMAGE_TAG" || true
+  docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG" || true
+  docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG" || true
+  $DOCKER_CMD up -d
+else
+  echo "Selective deployment based on changed files..."
+  
+  if echo "$CHANGED_FILES" | grep -q "^customer/"; then
+    echo "Updating Customer service..."
+    docker pull "$ECR_URL/r2sqs-eb-customer:$IMAGE_TAG" || true
+    $DOCKER_CMD build customer
+    $DOCKER_CMD up -d customer
+  fi
+
+  if echo "$CHANGED_FILES" | grep -q "^products/"; then
+    echo "Updating Products service..."
+    docker pull "$ECR_URL/r2sqs-eb-products:$IMAGE_TAG" || true
+    $DOCKER_CMD build products
+    $DOCKER_CMD up -d products
+  fi
+
+  if echo "$CHANGED_FILES" | grep -q "^shopping/"; then
+    echo "Updating Shopping service..."
+    docker pull "$ECR_URL/r2sqs-eb-shopping:$IMAGE_TAG" || true
+    $DOCKER_CMD build shopping
+    $DOCKER_CMD up -d shopping
+  fi
+
+  if echo "$CHANGED_FILES" | grep -q "^gateway/"; then
+    echo "Updating Gateway service..."
+    docker pull "$ECR_URL/r2sqs-eb-gateway:$IMAGE_TAG" || true
+    $DOCKER_CMD build gateway
+    $DOCKER_CMD up -d gateway
+  fi
+  
+  # Ensure gateway is running at minimum if we took things down
+  $DOCKER_CMD up -d gateway
+fi
 
 echo "===== Container Health Status ====="
 docker ps --format 'table {{.Names}}\t{{.Status}}'
