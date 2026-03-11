@@ -480,11 +480,9 @@ The following diagram represents the **complete enterprise CI/CD + event-driven 
 ```
 
 [ 1. DEVELOPER & SOURCE CONTROL ]
-
 ---------------------------------
-
 +------------------+         git push    +----------------------+
-|    Developer     | ------------------> |      GitHub Repo     |
+| Developer        | ------------------> |      GitHub Repo     |
 | (Edits Node.js / |                     | (Source of truth for |
 |  TF / Docker)    |                     |  Code & Infra)       |
 +------------------+                     +----------+-----------+
@@ -493,165 +491,146 @@ The following diagram represents the **complete enterprise CI/CD + event-driven 
                                                     v
 
 [ 2. AWS CODEPIPELINE: INTELLIGENT BUILD PIPELINE ]
-
 ---------------------------------------------------
-
-+----------------------------------------------------------------------------------------------------------------------------------+
-|                                                      AWS CODEPIPELINE                                                            |
-|----------------------------------------------------------------------------------------------------------------------------------|
-|                                                                                                                                  |
-|  +-----------------------------------------------------+                                                                         |
-|  |                 CODEBUILD STAGE                     |                                                                         |
-|  |-----------------------------------------------------|                                                                         |
-|  | Runs buildspec.yml                                  |                                                                         |
-|  | 1. Checkout source                                  |                                                                         |
-|  | 2. IMAGE_TAG = git commit SHA                       |                                                                         |
-|  | 3. Run detect_changes.sh                            |                                                                         |
-|  |                                                     |                                                                         |
-|  | detect_changes.sh logic:                            |                                                                         |
-|  |   git diff --name-only HEAD~1                       |                                                                         |
-|  |   if backend code changed → RUN_BUILD=true          |                                                                         |
-|  |   if Dockerfile changed → RUN_BUILD=true            |                                                                         |
-|  |   if infra/config changed → RUN_DEPLOY=true         |                                                                         |
-|  |   if only docs/scripts changed → skip stages        |                                                                         |
-|  |                                                     |                                                                         |
-|  | Output: pipeline.env (RUN_ANALYSIS, BUILD, DEPLOY)  |                                                                         |
-|  +--------------------------+--------------------------+                                                                         |
-|                             |                                                                                                    |
-|                             v                                                                                                    |
-|  +-----------------------------------------------------+                                                                         |
-|  |        DECISION: SHOULD ANALYSIS RUN?               |                                                                         |
-|  |-----------------------------------------------------|                                                                         |
-|  | RUN_ANALYSIS = true ?                               |                                                                         |
-|  |   YES → RUN SONARQUBE (Static Analysis / Security)  |                                                                         |
-|  |   NO  → SKIP ANALYSIS                               |                                                                         |
-|  +--------------------------+--------------------------+                                                                         |
-|                             |                                                                                                    |
-|                             v                                                                                                    |
-|  +-----------------------------------------------------+           +----------------------------------------------------------+  |
-|  |          DECISION: SHOULD BUILD RUN?                |           |                     PUSH TO ECR                          |  |
-|  |-----------------------------------------------------|           |----------------------------------------------------------|  |
-|  | RUN_BUILD = true ?                                  |   (YES)   | if image already exists in ECR → skip push               |  |
-|  |   NO  → SKIP BUILD                                  |           | else → docker push                                       |  |
-|  |   YES → DOCKER BUILD LOGIC                          | --------> |                                                          |  |
-|  |         For each service (customer, products, etc.) |           | images tagged as:                                        |  |
-|  |         Check if image exists in ECR:               |           |   service:commit_sha                                     |  |
-|  |           aws ecr describe-images                   |           |   service:latest                                         |  |
-|  |           if exists → SKIP BUILD                    |           +---------------------------+------------------------------+  |
-|  |           else → docker build & docker tag          |                                       |                                 |
-|  +-----------------------------------------------------+                                       |                                 |
-|                                                                                                |                                 |
-|  +---------------------------------------------------------------------------------------------+                                 |
-|  |                                                                                                                               |
-|  v                                                                                                                               |
-|  +-----------------------------------------------------+                                                                         |
-|  |         DECISION: SHOULD DEPLOY RUN?                |                                                                         |
-|  |-----------------------------------------------------|                                                                         |
-|  | RUN_DEPLOY = true ?                                 |                                                                         |
-|  |   NO  → SKIP DEPLOY                                 |                                                                         |
-|  |   YES → TRIGGER AWS CODEDEPLOY                      |                                                                         |
-|  +--------------------------+--------------------------+                                                                         |
-+-----------------------------|----------------------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------------------------------+
+| AWS CODEPIPELINE                                                                                                          |
+|---------------------------------------------------------------------------------------------------------------------------|
+|                                                                                                                           |
+|  +-----------------------------------------------------+                                                                  |
+|  |                 CODEBUILD STAGE                     |                                                                  |
+|  |-----------------------------------------------------|                                                                  |
+|  | Runs buildspec.yml                                  |                                                                  |
+|  | 1. Checkout source                                  |                                                                  |
+|  | 2. IMAGE_TAG = git commit SHA                       |                                                                  |
+|  | 3. Run detect_changes.sh                            |                                                                  |
+|  |                                                     |                                                                  |
+|  | detect_changes.sh logic:                            |                                                                  |
+|  |   git diff --name-only HEAD~1                       |                                                                  |
+|  |   if backend code changed → RUN_BUILD=true          |                                                                  |
+|  |   if Dockerfile changed → RUN_BUILD=true            |                                                                  |
+|  |   if infra/config changed → RUN_DEPLOY=true         |                                                                  |
+|  |   if only docs/scripts changed → skip stages        |                                                                  |
+|  |                                                     |                                                                  |
+|  | Output: pipeline.env (RUN_ANALYSIS, BUILD, DEPLOY)  |                                                                  |
+|  +--------------------------+--------------------------+                                                                  |
+|                             |                                                                                             |
+|                             v                                                                                             |
+|  +-----------------------------------------------------+                                                                  |
+|  |        DECISION: SHOULD ANALYSIS RUN?               |                                                                  |
+|  |-----------------------------------------------------|                                                                  |
+|  | RUN_ANALYSIS = true ?                               |                                                                  |
+|  |   YES → RUN SONARQUBE (Static Analysis / Security)  |                                                                  |
+|  |   NO  → SKIP ANALYSIS                               |                                                                  |
+|  +--------------------------+--------------------------+                                                                  |
+|                             |                                                                                             |
+|                             v                                                                                             |
+|  +-----------------------------------------------------+   +----------------------------------------------------------+   |
+|  |          DECISION: SHOULD BUILD RUN?                |   |                     PUSH TO ECR                          |   |
+|  |-----------------------------------------------------|   |----------------------------------------------------------|   |
+|  | RUN_BUILD = true ?                                  |   | if image already exists in ECR → skip push               |   |
+|  |   NO  → SKIP BUILD                                  |   | else → docker push                                       |   |
+|  |   YES → DOCKER BUILD LOGIC                          |   |                                                          |   |
+|  |         For each service (customer, products, etc.) |---| images tagged as:                                        |   |
+|  |         Check if image exists in ECR:               |   |   service:commit_sha                                     |   |
+|  |           aws ecr describe-images                   |   |   service:latest                                         |   |
+|  |           if exists → SKIP BUILD                    |   |                                                          |   |
+|  |           else → docker build & docker tag          |   +----------------------------------------------------------+   |
+|  +--------------------------+--------------------------+                                                                  |
+|                             |                                                                                             |
+|                             v                                                                                             |
+|  +-----------------------------------------------------+                                                                  |
+|  |         DECISION: SHOULD DEPLOY RUN?                |                                                                  |
+|  |-----------------------------------------------------|                                                                  |
+|  | RUN_DEPLOY = true ?                                 |                                                                  |
+|  |   NO  → SKIP DEPLOY                                 |                                                                  |
+|  |   YES → TRIGGER AWS CODEDEPLOY                      |                                                                  |
+|  +-----------------------------------------------------+                                                                  |
++-----------------------------|---------------------------------------------------------------------------------------------+
                               |
                               v
+
 [ 3. AWS CODEDEPLOY & DEPLOYMENT SCRIPT ]
-
 -----------------------------------------
-
-+--------------------------------------------------------------------------------------+
-| AWS CODEDEPLOY (EC2 Agent)                                                           |
-|--------------------------------------------------------------------------------------|
-| Reads appspec.yml                                                                    |
-| AfterInstall hook triggers → scripts/deploy.sh                                       |
-|                                                                                      |
-| deploy.sh Logic Execution:                                                           |
-| 1. Detect AWS Region & Login to ECR                                                  |
-| 2. Load IMAGE_TAG from image.env                                                     |
-| 3. IF IMAGE_TAG exists in ECR → pull IMAGE_TAG                                       |
-|    ELSE → pull latest                                                                |
-| 4. Inject DB_URI / JWT_SECRET from AWS Secrets Manager / SSM                         |
-| 5. docker compose down                                                               |
-| 6. docker compose pull                                                               |
-| 7. docker compose up -d                                                              |
-| 8. Start containers: gateway, customer, products, shopping, redis, sonarqube         |
-+--------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------------------------------+
+| AWS CODEDEPLOY (EC2 Agent)                                                                                                |
+|---------------------------------------------------------------------------------------------------------------------------|
+| Reads appspec.yml                                                                                                         |
+| AfterInstall hook triggers → scripts/deploy.sh                                                                            |
+|                                                                                                                           |
+| deploy.sh Logic Execution:                                                                                                |
+| 1. Detect AWS Region & Login to ECR                                                                                       |
+| 2. Load IMAGE_TAG from image.env                                                                                          |
+| 3. IF IMAGE_TAG exists in ECR → pull IMAGE_TAG                                                                            |
+|    ELSE → pull latest                                                                                                     |
+| 4. Inject DB_URI / JWT_SECRET from AWS Secrets Manager / SSM                                                              |
+| 5. docker compose down                                                                                                    |
+| 6. docker compose pull                                                                                                    |
+| 7. docker compose up -d                                                                                                   |
+| 8. Start containers: gateway, customer, products, shopping, redis, sonarqube                                              |
++---------------------------------------------------------------------------------------------------------------------------+
                               |
                               v
-
-
 
 [ 4. RUNTIME SYSTEM (EC2 - Private Subnets) & API GATEWAY ]
-
 -----------------------------------------------------------
-
-+--------------------------------------------------------------------------------------+
-|                                 API GATEWAY / NGINX                                  |
-|                            (Container: r2sqs-eb-gateway)                             |
-|                        (Generates uuidv4 Correlation IDs)                            |
-|                                       |                                              |
-+---------------+-----------------------+-----------------------+----------------------+
-                |                       |                       |
-                v                       v                       v
-      +-------------------+   +-------------------+   +-------------------+
-      | CUSTOMER SERVICE  |   | SHOPPING SERVICE  |   | PRODUCTS SERVICE  |
-      | r2sqs-eb-customer |   | r2sqs-eb-shopping |   | r2sqs-eb-products |
-      | (Auth, Users)     |   | (Carts, Checkout) |   | (Catalog, Cache)  |
-      +---------+---------+   +---------+---------+   +---------+---------+
-                |                       |                       |
-      (Publishes CustomerCreated)  (Publishes OrderCreated) (Publishes CacheInvalidated)
-                |                       |                       |
-                v                       v                       v
++---------------------------------------------------------------------------------------------------------------------------+
+| API GATEWAY / NGINX                                                                                                       |
+|                                 (Container: r2sqs-eb-gateway)                                                             |
+|                             (Generates uuidv4 Correlation IDs)                                                            |
++-----------------------+---------------------------------------+---------------------------------------+-------------------+
+                        |                                       |                                       |
+                        v                                       v                                       v
+              +-------------------+                   +-------------------+                   +-------------------+
+              | CUSTOMER SERVICE  |                   | SHOPPING SERVICE  |                   | PRODUCTS SERVICE  |
+              | r2sqs-eb-customer |                   | r2sqs-eb-shopping |                   | r2sqs-eb-products |
+              | (Auth, Users)     |                   | (Carts, Checkout) |                   | (Catalog, Cache)  |
+              +---------+---------+                   +---------+---------+                   +---------+---------+
+                        |                                       |                                       |
+           (Publishes CustomerCreated)               (Publishes OrderCreated)            (Publishes CacheInvalidated)
+                        |                                       |                                       |
+                        v                                       v                                       v
 
 [ 5. EVENT-DRIVEN BACKPLANE ]
-
 -----------------------------
-
-                           +---------------------------+
-                           |     AMAZON EVENTBRIDGE    |
-                           |       (Event Bus)         |
-                           +-------------+-------------+
-                                         |
-               +-------------------------+-------------------------+
-               |                         |                         |
-               v                         v                         v
-     +-------------------+    +-----------------------+    +-----------------------+
-     | CustomerCreated   |    | OrderCreated Queue    |    | CacheInvalidated      |
-     | Queue (SQS)       |    | & Prod Queue (Fan-Out)|    | Queue (SQS)           |
-     +---------+---------+    +----------+------------+    +-----------+-----------+
-               |                         |                             |
-             (Poll)                 (Poll queues)                    (Poll)
-               |                         |                             |
-               v                         v                             v
-      [ Shopping Service ]       [ Customer Service ]           [ Products Service ]
-        creates cart             links order history              clears Redis key
-                                         &
-                                 [ Products Service ]
-                                  reduces inventory
+                                          +-------------------------------------------+
+                                          |             AMAZON EVENTBRIDGE            |
+                                          |                (Event Bus)                |
+                                          +---------------------+---------------------+
+                                                                |
+                        +---------------------------------------+---------------------------------------+
+                        |                                       |                                       |
+                        v                                       v                                       v
+              +-------------------+                   +-------------------+                   +-------------------+
+              | CustomerCreated   |                   | OrderCreated Queue|                   | CacheInvalidated  |
+              | Queue (SQS)       |                   | & Prod Q (Fan-Out)|                   | Queue (SQS)       |
+              +---------+---------+                   +---------+---------+                   +---------+---------+
+                        |                                       |                                       |
+                      (Poll)                              (Poll queues)                              (Poll)
+                        |                                       |                                       |
+                        v                                       v                                       v
+               [ Shopping Service ]         [ Customer Service ] & [ Products Service ]         [ Products Service ]
+                   creates cart              links order history      reduces inventory           clears Redis key
 
 
 [ 6. DATA & CACHING LAYER ]
-
 ---------------------------
-
-+-------------------------------------------+  +-------------------------------------------+
-|             AMAZON DOCUMENTDB             |  |               REDIS CACHE                 |
-| (Customer, Orders, Products collections)  |  |       (Products catalog caching)          |
-| (Secured via TLS & VPC isolation)         |  |       (Event-driven invalidation)         |
-+-------------------------------------------+  +-------------------------------------------+
-       ^                           ^                  ^
-       |                           |                  |
-    (Reads/Writes)           (Reads/Writes)     (Reads/Purges)
-[Customer/Shopping/Products] [Customer/Shopping] [Products Service]
+          +-------------------------------------------------------------------+   +-------------------------------------+
+          | AMAZON DOCUMENTDB                                                 |   | REDIS CACHE                         |
+          | (Customer, Orders, Products collections)                          |   | (Products catalog caching)          |
+          | (Secured via TLS & VPC isolation)                                 |   | (Event-driven invalidation)         |
+          +-------------------------------------------------------------------+   +-------------------------------------+
+                        ^                                       ^                                       ^
+                        |                                       |                                       |
+                 (Reads/Writes)                          (Reads/Writes)                          (Reads/Purges)
+          [Customer/Shopping/Products]                [Customer/Shopping]                      [Products Service]
 
 
 [ 7. FAILURE HANDLING (DLQs) ]
-
 ------------------------------
-
-+--------------------------------------------------------------------------------------+
-| If a consumer crashes or DB locks during SQS processing:                             |
-| SQS Retries → Dead Letter Queue (DLQ) → CloudWatch Alarm → Engineer Alert            |
-+--------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------------------------------+
+| If a consumer crashes or DB locks during SQS processing:                                                                  |
+| SQS Retries → Dead Letter Queue (DLQ) → CloudWatch Alarm → Engineer Alert                                                 |
++---------------------------------------------------------------------------------------------------------------------------+
 
 ```
 ---
@@ -663,164 +642,138 @@ Below is the **real execution flow captured from logs**.
 ```
 
 [ 1. SYSTEM INITIALIZATION & CONTAINER BOOT (07:31:46) ]
-
 --------------------------------------------------------
-
 [ Docker Host ] 
       |
       |--> (Spins up containers via docker-compose)
       |
       |--> [ Customer Container ] ---> "Customer service listening" (Port 8001)
-      |         |--> "Connected to DocumentDB"
-      |         |--> "Starting SQS Consumer" (r2sqs-eb-order-created-queue)
+      |                                "Connected to DocumentDB"
+      |                                "Starting SQS Consumer" (r2sqs-eb-order-created-queue)
       |
       |--> [ Products Container ] ---> "Products service listening" (Port 8002)
-      |         |--> "Connected to DocumentDB"
-      |         |--> "Starting SQS Consumer" (r2sqs-eb-order-created-products-queue)
-      |         |--> "Starting SQS Consumer" (r2sqs-eb-cache-invalidated-queue)
-      |         |--> "Cache Miss — querying DB" (cacheKey: products:all) ---> (Initial Cache Load)
+      |                                "Connected to DocumentDB"
+      |                                "Starting SQS Consumer" (r2sqs-eb-order-created-products-queue)
+      |                                "Starting SQS Consumer" (r2sqs-eb-cache-invalidated-queue)
+      |                                "Cache Miss — querying DB" (cacheKey: products:all) ---> (Initial Cache Load)
       |
       |--> [ Shopping Container ] ---> "Shopping service listening" (Port 8003)
-      |         |--> "Connected to DocumentDB"
-      |         |--> "Starting SQS Consumer" (r2sqs-eb-customer-created-queue)
-
+                                       "Connected to DocumentDB"
+                                       "Starting SQS Consumer" (r2sqs-eb-customer-created-queue)
 
 [ 2. USER SIGNUP FLOW: EVENT PUBLISHING & CART CREATION (07:35:20) ]
-
 --------------------------------------------------------------------
-
 [ Client Request ] 
       |
-      |---> POST /signup (email: user1@test.com) ---> [ API Gateway ] ---> [ Customer Service ]
-                                                                                |
-                                                                                |--> "Customer Signed Up" (ID: 69afc9b8...)
-                                                                                |--> "Publishing Event" (CustomerCreated)
-                                                                                |
+      |---> POST /signup (user1@test.com) ---> [ API Gateway ] ---> [ Customer Service ]
+                                                                            |
+                                                                            |--> "Customer Signed Up" (ID: 69afc9b8...)
+                                                                            |--> "Publishing Event" (CustomerCreated)
+                                                                            |
 [ Customer Service ] -----------------(CustomerCreated Event)-----------------> [ AWS EventBridge ]
-      |                                                                                 |
-      |--> "EventBridge ACK received"                                                   |
-                                                                             (Routes via Rule 1)
-                                                                                        |
-                                                                                        v
-                                                                        [ r2sqs-eb-customer-created-queue (SQS) ]
-                                                                                        |
-                                                                                      (Poll)
-                                                                                        |
-                                                                                        v
-                                                                              [ Shopping Service ]
-                                                                                        |--> "SQS Message Received"
-                                                                                        |--> "Processing Event" (CustomerCreated)
-                                                                                        |--> "Cart Created" (For ID: 69afc9b8...)
-                                                                                        |--> "SQS Message Deleted"
+      |                                                                             |
+      |--> "EventBridge ACK received"                                               |
+                                                                            (Routes via Rule 1)
+                                                                                    |
+                                                                                    v
+                                                                    [ r2sqs-eb-customer-created-queue (SQS) ]
+                                                                                    |
+                                                                                  (Poll)
+                                                                                    |
+                                                                                    v
+                                                                          [ Shopping Service ]
+                                                                                    |--> "SQS Message Received"
+                                                                                    |--> "Processing Event" (Customer)
+                                                                                    |--> "Cart Created" (For ID: ...)
+                                                                                    |--> "SQS Message Deleted"
 
 [ 3. USER LOGIN (07:35:24) ]
-
 ----------------------------
-
 [ Client Request ] ---> POST /login (email: user1@test.com) ---> [ Customer Service ]
-                                                                      |--> "Customer Signed In"
-
+                                                                     |--> "Customer Signed In"
 
 [ 4. PRODUCT CREATION & EVENT-DRIVEN CACHE INVALIDATION (07:36:01) ]
-
 --------------------------------------------------------------------
-
 [ Client Request ] ---> POST /product/create (Name: Flour, Type: Grocery) ---> [ Products Service ]
                                                                                       |
-                                                                                      |--> "Product Created" (ID: 69afc9e1...)
-                                                                                      |--> "Publishing Event" (ProductCreated)
+                                                                                      |--> "Product Created" (ID: 69af...)
+                                                                                      |--> "Publishing Event" (Product)
                                                                                       |
 [ Products Service ] ----------------(ProductCreated Event)---------------------> [ AWS EventBridge ]
-      |                                                                                 |
-      |--> "EventBridge ACK received"                                             (External routing/logging)
+      |                                                                             |
+      |--> "EventBridge ACK received"                                         (External routing/logging)
       |
       |--> "Publishing Event" (CacheInvalidated)
       |
 [ Products Service ] ----------------(CacheInvalidated Event)-------------------> [ AWS EventBridge ]
-      |                                                                                 |
-      |--> "EventBridge ACK received"                                            (Routes via Rule 3)
-      |--> "CacheInvalidated event published"                                           |
-                                                                                        v
-                                                                        [ r2sqs-eb-cache-invalidated-queue (SQS) ]
-                                                                                        |
-                                                                                      (Poll)
-                                                                                        |
-                                                                                        v
-                                                                              [ Products Service ]
-                                                                                        |--> "SQS Message Received"
-                                                                                        |--> "Processing Event" (CacheInvalidated)
-                                                                                        |--> "Cache Cleared" (key: products:all)
-                                                                                        |--> "SQS Message Deleted"
-                                                                                        |
-                                                                                        |--> (Subsequent query)
-                                                                                        |--> "Cache Miss — querying DB" (Reloads cache)
-
+      |                                                                             |
+      |--> "EventBridge ACK received"                                        (Routes via Rule 3)
+      |--> "CacheInvalidated event published"                                       |
+                                                                                    v
+                                                                    [ r2sqs-eb-cache-invalidated-queue (SQS) ]
+                                                                                    |
+                                                                                  (Poll)
+                                                                                    |
+                                                                                    v
+                                                                          [ Products Service ]
+                                                                                    |--> "SQS Message Received"
+                                                                                    |--> "Processing Event"
+                                                                                    |--> "Cache Cleared" (products:all)
+                                                                                    |--> "SQS Message Deleted"
+      |
+      |--> (Subsequent query)
+                                                                                    |--> "Cache Miss — querying DB"
 
 [ 5. CART UPDATE (07:36:19) ]
-
 -----------------------------
-
 [ Client Request ] ---> Add to Cart (Product: Flour, QTY: 250) ---> [ Shopping Service ]
                                                                             |--> "Cart Updated"
 
-
 [ 6. ORDER CREATION & FAN-OUT TO CUSTOMER + PRODUCTS (07:36:32) ]
-
 -----------------------------------------------------------------
-
 [ Client Request ] ---> POST /order ---> [ Shopping Service ]
                                                 |
                                                 |--> "Order Created" (ID: 69afca00...)
                                                 |--> "Publishing Event" (OrderCreated)
                                                 |
 [ Shopping Service ] ----------------(OrderCreated Event)----------------------> [ AWS EventBridge ]
-      |                                                                                  |
-      |--> "EventBridge ACK received"                                             (Routes via Rule 2)
-                                                                               (FAN-OUT PATTERN TRIGGERED)
-                                                                                         |
-                                      +--------------------------------------------------+-------------------------------------------------+
-                                      |                                                                                                    |
-                                      v                                                                                                    v
-                  [ r2sqs-eb-order-created-queue (SQS) ]                                                            [ r2sqs-eb-order-created-products-queue (SQS) ]
-                                      |                                                                                                    |
-                                    (Poll)                                                                                               (Poll)
-                                      |                                                                                                    |
-                                      v                                                                                                    v
-                             [ Customer Service ]                                                                                 [ Products Service ]
-                                      |--> "SQS Message Received"                                                                          |--> "SQS Message Received"
-                                      |--> "Processing Event" (OrderCreated)                                                               |--> "Processing Event" (OrderCreated)
-                                      |--> "Order Linked to Customer"                                                                      |--> "Publishing Event" (CacheInvalidated)
-                                      |                                                                                                    |--> "Inventory Reduced" (Product: Flour, QTY: 250)
-                                      |--> "Publishing Event" (CustomerOrderLinked) --> (To EventBridge)                                   |
-                                      |--> "EventBridge ACK received"                                                                      |--> (CacheInvalidation Flow executes again)
-                                      |--> "SQS Message Deleted"                                                                           |     |--> Publishes CacheInvalidated to EventBridge
-                                                                                                                                           |     |--> Receives ACK
-                                                                                                                                           |     |--> Receives payload from cache-invalidated SQS
-                                                                                                                                           |     |--> "Cache Cleared" (products:all)
-                                                                                                                                           |     |--> Deletes SQS message
-                                                                                                                                           |
-                                                                                                                                           |--> "SQS Message Deleted" (From order-created-products-queue)
-
+      |                                                                             |
+      |--> "EventBridge ACK received"                                         (Routes via Rule 2)
+                                                                         (FAN-OUT PATTERN TRIGGERED)
+                                                                                    |
+                         +----------------------------------------------------------+-----------------------+
+                         |                                                                                  |
+                         v                                                                                  v
+      [ r2sqs-eb-order-created-queue (SQS) ]                          [ r2sqs-eb-order-created-products-queue (SQS) ]
+                         |                                                                                  |
+                       (Poll)                                                                             (Poll)
+                         |                                                                                  |
+                         v                                                                                  v
+      [ Customer Service ]                                              [ Products Service ]
+                         |--> "SQS Message Received"                                      |--> "SQS Message Received"
+                         |--> "Processing Event" (OrderCreated)                           |--> "Processing Event"
+                         |--> "Order Linked to Customer"                                  |--> "Inventory Reduced"
+                         |--> "Publishing Event" (CustomerOrderLinked)                    |--> "Publishing Event" (Cache)
+                         |--> "SQS Message Deleted"                                       |--> Publishes CacheInv. to EB
+                                                                                          |--> Receives ACK
+                                                                                          |--> Receives payload
+                                                                                          |--> "Cache Cleared"
+                                                                                          |--> "SQS Message Deleted"
 
 [ 7. SECOND PRODUCT CREATION & CACHE INVALIDATION (07:37:32) ]
-
 --------------------------------------------------------------
-
-[ Client Request ] ---> POST /product/create (Name: Laptop, Type: Electronics) ---> [ Products Service ]
-                                                                                            |
-                                                                                            |--> "Product Created"
-                                                                                            |--> "Publishing Event" (ProductCreated)
-                                                                                            |--> "Publishing Event" (CacheInvalidated)
-                                                                                            |--> (EventBridge Routes to SQS)
-                                                                                            |--> (Consumer pulls from SQS)
-                                                                                            |--> "Cache Cleared"
-                                                                                            |--> "Cache Miss — querying DB" (Reloads cache)
-
+[ Client Request ] ---> POST /product/create (Name: Laptop) ---> [ Products Service ]
+                                                                       |
+                                                                       |--> "Product Created"
+                                                                       |--> "Publishing Event" (ProductCreated)
+                                                                       |--> "Publishing Event" (CacheInvalidated)
+                                                                       |--> (EventBridge Routes to SQS)
+                                                                       |--> (Consumer pulls from SQS)
+                                                                       |--> "Cache Cleared"
+                                                                       |--> "Cache Miss — querying DB" (Reloads cache)
 
 [ 8. SECOND CART UPDATE & ORDER CREATION FAN-OUT (07:38:15 - 07:38:34) ]
-
 ------------------------------------------------------------------------
-
 [ Client Request ] ---> Add to Cart (Product: Laptop, QTY: 8) ---> [ Shopping Service ] --> "Cart Updated"
       |
 [ Client Request ] ---> POST /order ---> [ Shopping Service ]
@@ -829,28 +782,26 @@ Below is the **real execution flow captured from logs**.
                                                 |--> "Publishing Event" (OrderCreated)
                                                 |
 [ Shopping Service ] ----------------(OrderCreated Event)----------------------> [ AWS EventBridge ]
-      |                                                                                  |
-      |--> "EventBridge ACK received"                                             (Routes via Rule 2)
-                                                                               (FAN-OUT PATTERN TRIGGERED)
-                                                                                         |
-                                      +--------------------------------------------------+-------------------------------------------------+
-                                      |                                                                                                    |
-                                      v                                                                                                    v
-                  [ r2sqs-eb-order-created-queue (SQS) ]                                                            [ r2sqs-eb-order-created-products-queue (SQS) ]
-                                      |                                                                                                    |
-                                    (Poll)                                                                                               (Poll)
-                                      |                                                                                                    |
-                                      v                                                                                                    v
-                             [ Customer Service ]                                                                                 [ Products Service ]
-                                      |--> "SQS Message Received"                                                                          |--> "SQS Message Received"
-                                      |--> "Processing Event" (OrderCreated)                                                               |--> "Processing Event" (OrderCreated)
-                                      |--> "Order Linked to Customer"                                                                      |--> "Publishing Event" (CacheInvalidated)
-                                      |--> "Publishing Event" (CustomerOrderLinked)                                                        |--> "Inventory Reduced" (Product: Laptop, QTY: 8)
-                                      |--> "SQS Message Deleted"                                                                           |
-                                                                                                                                           |--> (CacheInvalidation Flow executes again)
-                                                                                                                                           |     |--> "Cache Cleared"
-                                                                                                                                           |
-                                                                                                                                           |--> "SQS Message Deleted"
+      |                                                                             |
+      |--> "EventBridge ACK received"                                         (Routes via Rule 2)
+                                                                         (FAN-OUT PATTERN TRIGGERED)
+                                                                                    |
+                         +----------------------------------------------------------+-----------------------+
+                         |                                                                                  |
+                         v                                                                                  v
+      [ r2sqs-eb-order-created-queue (SQS) ]                          [ r2sqs-eb-order-created-products-queue (SQS) ]
+                         |                                                                                  |
+                       (Poll)                                                                             (Poll)
+                         |                                                                                  |
+                         v                                                                                  v
+      [ Customer Service ]                                              [ Products Service ]
+                         |--> "SQS Message Received"                                      |--> "SQS Message Received"
+                         |--> "Processing Event" (OrderCreated)                           |--> "Processing Event" (Order)
+                         |--> "Order Linked to Customer"                                  |--> "Inventory Reduced" (Qty 8)
+                         |--> "Publishing Event" (CustomerOrderLinked)                    |--> "Publishing Event" (Cache)
+                         |--> "SQS Message Deleted"                                       |--> (CacheInvalidation Flow)
+                                                                                          |--> "Cache Cleared"
+                                                                                          |--> "SQS Message Deleted"
 ```
 ---
 
